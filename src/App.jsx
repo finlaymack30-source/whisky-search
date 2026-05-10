@@ -253,19 +253,19 @@ function App() {
         </span>
 
         {/* Primary nav links */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+        <nav style={{ display: 'flex', alignItems: 'center' }}>
           {[
-            { label: 'Explore',         active: true  },
-            { label: 'Valuation',       active: false },
-            { label: "Editor's Picks",  active: false },
+            { label: 'Explore',        active: true  },
+            { label: 'Valuation',      active: false },
+            { label: "Editor's Picks", active: false },
           ].map((item, i) => (
             <span key={item.label} style={{ display: 'flex', alignItems: 'center' }}>
               {i > 0 && (
                 <span style={{
-                  margin: '0 14px', fontSize: 9,
-                  color: navDark ? 'rgba(160,144,128,0.5)' : 'rgba(200,169,110,0.35)',
-                  lineHeight: 1,
-                }}>·</span>
+                  display: 'inline-block', width: 1, height: 12, margin: '0 20px',
+                  background: navDark ? 'rgba(160,144,128,0.28)' : 'rgba(200,169,110,0.25)',
+                  transition: 'background 0.35s ease',
+                }} />
               )}
               <button style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
@@ -281,10 +281,10 @@ function App() {
             </span>
           ))}
           <span style={{
-            margin: '0 14px', fontSize: 9,
-            color: navDark ? 'rgba(160,144,128,0.5)' : 'rgba(200,169,110,0.35)',
-            lineHeight: 1,
-          }}>·</span>
+            display: 'inline-block', width: 1, height: 12, margin: '0 20px',
+            background: navDark ? 'rgba(160,144,128,0.28)' : 'rgba(200,169,110,0.25)',
+            transition: 'background 0.35s ease',
+          }} />
           <span style={{
             fontFamily: 'Ronzino, sans-serif', fontSize: 13, letterSpacing: '0.02em',
             color: navDark ? 'rgba(160,144,128,0.45)' : 'rgba(200,185,154,0.35)',
@@ -293,9 +293,9 @@ function App() {
           }}>
             My Collection
             <span style={{
-              marginLeft: 5, fontSize: 9, letterSpacing: '0.1em',
-              fontFamily: 'monospace',
-              color: navDark ? 'rgba(160,144,128,0.4)' : 'rgba(200,185,154,0.3)',
+              marginLeft: 6, fontSize: 8, letterSpacing: '0.12em',
+              fontFamily: 'monospace', textTransform: 'uppercase',
+              color: navDark ? 'rgba(160,144,128,0.38)' : 'rgba(200,185,154,0.28)',
               verticalAlign: 'middle',
             }}>soon</span>
           </span>
