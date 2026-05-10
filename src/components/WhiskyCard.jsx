@@ -54,7 +54,7 @@ function WhiskyCard({ whisky, saved, onSave, view }) {
           <Stars score={whisky.score} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: '#1a1208', lineHeight: 1.2 }}>{whisky.title}</div>
+          <div style={{ fontFamily: "'Ronzino', sans-serif", fontSize: 16, fontWeight: 700, color: '#1a1208', lineHeight: 1.2 }}>{whisky.title}</div>
           <div style={{ fontSize: 11, color: '#8a7660', marginBottom: 5 }}>{whisky.distillery} · {whisky.region}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 5 }}>
             {whisky.type && <span style={{ fontSize: 10, color: '#7a6648', background: '#f5efe6', padding: '2px 6px', borderRadius: 8 }}>{whisky.type}</span>}
@@ -96,7 +96,7 @@ function WhiskyCard({ whisky, saved, onSave, view }) {
           </button>
         </div>
         <div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 700, color: '#1a1208', lineHeight: 1.3 }}>{whisky.title}</div>
+          <div style={{ fontFamily: "'Ronzino', sans-serif", fontSize: 14, fontWeight: 700, color: '#1a1208', lineHeight: 1.3 }}>{whisky.title}</div>
           <div style={{ fontSize: 10, color: '#8a7660', marginTop: 1 }}>{whisky.distillery}</div>
         </div>
       </div>
