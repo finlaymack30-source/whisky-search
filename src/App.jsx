@@ -2,7 +2,15 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from './supabase'
 import WhiskyCard from './components/WhiskyCard'
 
-const SLIDE_DURATION = 6000
+const SLIDE_DURATION = 10000
+
+const SLIDE_THEMES = [
+  { bg: '#0c1209', glow: '#162e12' },
+  { bg: '#090c14', glow: '#0f1a2e' },
+  { bg: '#130d06', glow: '#2e1c0a' },
+  { bg: '#100a12', glow: '#20122a' },
+  { bg: '#0a100d', glow: '#142818' },
+]
 
 const NAV_ITEMS = [
   { label: 'All', value: 'All' },
@@ -126,13 +134,36 @@ function CarouselHero({ whiskies }) {
   const [fading, setFading] = useState(false)
   const [imgErrors, setImgErrors] = useState(new Set())
 
-  const featured = useMemo(() =>
-    [...whiskies]
-      .filter(w => w.image_url && w.tasting_note)
+  const featured = useMemo(() => {
+    if (!whiskies.length) return []
+    const sanaig = whiskies.find(w => w.title?.toLowerCase().includes('sanaig'))
+    const seenDistilleries = new Set()
+    const seenRegions = new Set()
+    const results = []
+
+    // Exclude American region, cap at £400, require image + tasting note
+    const pool = [...whiskies]
+      .filter(w => w.image_url && w.tasting_note && w.region !== 'American' && (!w.price_gbp || w.price_gbp <= 400))
       .sort((a, b) => b.score - a.score)
-      .slice(0, 5),
-    [whiskies]
-  )
+
+    // Force Kilchoman Sanaig in first
+    if (sanaig?.image_url && sanaig?.tasting_note) {
+      results.push(sanaig)
+      seenDistilleries.add(sanaig.distillery)
+      seenRegions.add(sanaig.region)
+    }
+
+    // Fill remaining slots — one per distillery, one per region
+    for (const w of pool) {
+      if (results.length >= 5) break
+      if (seenDistilleries.has(w.distillery) || seenRegions.has(w.region)) continue
+      results.push(w)
+      seenDistilleries.add(w.distillery)
+      seenRegions.add(w.region)
+    }
+
+    return results
+  }, [whiskies])
 
   const goTo = (i) => {
     if (i === slide || fading) return
@@ -155,17 +186,20 @@ function CarouselHero({ whiskies }) {
   if (!featured.length) return null
 
   const w = featured[slide]
+  const theme = SLIDE_THEMES[slide % SLIDE_THEMES.length]
   const showImg = w.image_url && !imgErrors.has(w.id)
 
   return (
     <div style={{
-      height: '100vh', position: 'relative', overflow: 'hidden',
-      background: '#1a1208',
+      height: '88vh', position: 'relative', overflow: 'hidden',
+      background: theme.bg,
+      transition: 'background 0.8s ease',
     }}>
-      {/* Warm radial glow behind bottle */}
+      {/* Radial glow — shifts colour per theme */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 72% 50%, #2e1c0a 0%, #1a1208 58%)',
+        background: `radial-gradient(ellipse at 70% 52%, ${theme.glow} 0%, ${theme.bg} 60%)`,
+        transition: 'background 0.8s ease',
       }} />
 
       {/* Slide content */}
@@ -177,8 +211,8 @@ function CarouselHero({ whiskies }) {
       }}>
         {/* Left — text */}
         <div style={{
-          flex: '0 0 55%', display: 'flex', flexDirection: 'column',
-          justifyContent: 'center', padding: '100px 64px 80px',
+          flex: '0 0 52%', display: 'flex', flexDirection: 'column',
+          justifyContent: 'center', padding: '90px 64px 72px',
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22,
@@ -186,20 +220,20 @@ function CarouselHero({ whiskies }) {
             fontFamily: 'Ronzino, sans-serif',
           }}>
             <span style={{ color: '#c8a96e', fontWeight: 500 }}>{String(slide + 1).padStart(2, '0')}</span>
-            <span style={{ color: '#3d2e1a' }}>·</span>
-            <span style={{ color: '#6b5a42' }}>{w.region}</span>
+            <span style={{ color: '#3d3020' }}>·</span>
+            <span style={{ color: '#7a6a52' }}>{w.region}</span>
           </div>
 
           <div style={{
-            fontSize: 48, fontWeight: 700, color: '#f5e6c8', lineHeight: 1.08,
+            fontSize: 50, fontWeight: 700, color: '#f5e6c8', lineHeight: 1.06,
             marginBottom: 14, fontFamily: 'Ronzino, sans-serif', letterSpacing: '-0.5px',
           }}>
             {w.title}
           </div>
 
           <div style={{
-            fontSize: 12, color: '#6b5a42', marginBottom: 32,
-            letterSpacing: '0.07em', fontFamily: 'Ronzino, sans-serif',
+            fontSize: 11, color: '#7a6a52', marginBottom: 30,
+            letterSpacing: '0.08em', fontFamily: 'Ronzino, sans-serif',
           }}>
             {w.distillery}
             {w.age ? ` · ${w.age} Year Old` : ''}
@@ -209,14 +243,14 @@ function CarouselHero({ whiskies }) {
           {w.tasting_note && (
             <div style={{
               fontSize: 14, color: '#9a8878', lineHeight: 1.85,
-              fontStyle: 'italic', marginBottom: 40, maxWidth: 400,
+              fontStyle: 'italic', marginBottom: 38, maxWidth: 390,
               fontFamily: 'Ronzino, sans-serif',
             }}>
               "{w.tasting_note.length > 180 ? w.tasting_note.slice(0, 177) + '…' : w.tasting_note}"
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginBottom: 52 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginBottom: 50 }}>
             {w.price_gbp && (
               <span style={{ fontSize: 26, fontWeight: 500, color: '#c8a96e', fontFamily: 'Ronzino, sans-serif' }}>
                 £{w.price_gbp}
@@ -224,18 +258,15 @@ function CarouselHero({ whiskies }) {
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 16, color: '#c8a96e' }}>★</span>
-              <span style={{ fontSize: 17, fontWeight: 500, color: '#f5e6c8', fontFamily: 'Ronzino, sans-serif' }}>
-                {w.score}
-              </span>
+              <span style={{ fontSize: 17, fontWeight: 500, color: '#f5e6c8', fontFamily: 'Ronzino, sans-serif' }}>{w.score}</span>
             </div>
           </div>
 
-          {/* Dot nav */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {featured.map((_, i) => (
               <button key={i} onClick={() => goTo(i)} style={{
                 width: slide === i ? 28 : 6, height: 6, borderRadius: 3,
-                background: slide === i ? '#c8a96e' : '#3d2e1a',
+                background: slide === i ? '#c8a96e' : '#2e2416',
                 border: 'none', cursor: 'pointer', padding: 0,
                 transition: 'width 0.35s ease, background 0.35s ease',
               }} />
@@ -245,8 +276,8 @@ function CarouselHero({ whiskies }) {
 
         {/* Right — bottle */}
         <div style={{
-          flex: '0 0 45%', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', paddingTop: 60,
+          flex: '0 0 48%', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', paddingTop: 50, paddingBottom: 30,
         }}>
           {showImg && (
             <img
@@ -254,8 +285,8 @@ function CarouselHero({ whiskies }) {
               alt={w.title}
               onError={() => setImgErrors(prev => new Set([...prev, w.id]))}
               style={{
-                height: '72%', maxWidth: '78%', objectFit: 'contain',
-                filter: 'drop-shadow(0 40px 70px rgba(0,0,0,0.65))',
+                height: '82%', maxWidth: '84%', objectFit: 'contain',
+                filter: 'drop-shadow(0 30px 60px rgba(0,0,0,0.7))',
               }}
             />
           )}
@@ -265,7 +296,7 @@ function CarouselHero({ whiskies }) {
       {/* Progress bar */}
       <div key={`pb-${slide}`} style={{
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        height: 2, background: 'rgba(200,169,110,0.15)', zIndex: 2,
+        height: 2, background: 'rgba(200,169,110,0.12)', zIndex: 2,
       }}>
         <div style={{
           height: '100%', background: '#c8a96e',
