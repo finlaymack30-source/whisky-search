@@ -45,15 +45,15 @@ function App() {
     return matchesNav && matchesQuery
   })
 
-  if (loading) return <div style={{ padding: 32, color: '#8a7660', fontFamily: 'Inter, sans-serif' }}>Loading whiskies…</div>
+  if (loading) return <div style={{ padding: 32, color: '#8a7660', fontFamily: 'Ronzino, sans-serif' }}>Loading whiskies…</div>
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif', background: '#f7f4f0', minHeight: '100vh' }}>
+    <div style={{ fontFamily: 'Ronzino, sans-serif', background: '#f7f4f0', minHeight: '100vh' }}>
 
       {/* Navbar */}
       <div style={{ background: '#fff', borderBottom: '1px solid #ede5d8', padding: '0 28px', height: 64, display: 'flex', alignItems: 'center', gap: 20 }}>
-        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#b8882a', letterSpacing: '-0.5px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-          the bottle keep
+        <span style={{ fontFamily: "'Ronzino', sans-serif", fontSize: 26, fontWeight: 500, color: '#b8882a', letterSpacing: '-0.5px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          The Bottle Keep
         </span>
         <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #c8b89a', borderRadius: 30, overflow: 'hidden', height: 40, flex: 1, maxWidth: 480, background: '#fff' }}>
           <input
@@ -61,7 +61,7 @@ function App() {
             placeholder="Search any whisky…"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            style={{ flex: 1, border: 'none', outline: 'none', fontSize: 13, fontFamily: 'Inter, sans-serif', color: '#1a1208', background: 'transparent', padding: '0 16px', height: '100%' }}
+            style={{ flex: 1, border: 'none', outline: 'none', fontSize: 13, fontFamily: 'Ronzino, sans-serif', color: '#1a1208', background: 'transparent', padding: '0 16px', height: '100%' }}
           />
           <div style={{ width: 42, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7a6648', borderLeft: '1px solid #e8e0d4', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -90,7 +90,7 @@ function App() {
               fontWeight: activeNav === item.value ? 500 : 400,
               background: 'none', border: 'none',
               borderBottom: activeNav === item.value ? '2px solid #b8882a' : '2px solid transparent',
-              cursor: 'pointer', flexShrink: 0, fontFamily: 'Inter, sans-serif'
+              cursor: 'pointer', flexShrink: 0, fontFamily: 'Ronzino, sans-serif'
             }}
           >
             {item.label}
@@ -107,7 +107,7 @@ function App() {
             <button key={label} style={{
               flex: 1, height: 44,
               border: '1.5px solid #3d2e1a', borderRadius: 30,
-              background: '#fff', fontFamily: 'Inter, sans-serif',
+              background: '#fff', fontFamily: 'Ronzino, sans-serif',
               fontSize: 14, fontWeight: 500, color: '#1a1208',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
             }}>
@@ -133,7 +133,7 @@ function App() {
                 color: view === v ? '#f5e6c8' : '#3d2e1a',
                 fontSize: 12, fontWeight: 500, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 5,
-                fontFamily: 'Inter, sans-serif'
+                fontFamily: 'Ronzino, sans-serif'
               }}>
                 {v === 'grid'
                   ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Grid</>
