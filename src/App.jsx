@@ -252,6 +252,55 @@ function App() {
           The Bottle Keep
         </span>
 
+        {/* Primary nav links */}
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          {[
+            { label: 'Explore',         active: true  },
+            { label: 'Valuation',       active: false },
+            { label: "Editor's Picks",  active: false },
+          ].map((item, i) => (
+            <span key={item.label} style={{ display: 'flex', alignItems: 'center' }}>
+              {i > 0 && (
+                <span style={{
+                  margin: '0 14px', fontSize: 9,
+                  color: navDark ? 'rgba(160,144,128,0.5)' : 'rgba(200,169,110,0.35)',
+                  lineHeight: 1,
+                }}>·</span>
+              )}
+              <button style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontFamily: 'Ronzino, sans-serif', fontSize: 13, letterSpacing: '0.02em',
+                fontWeight: item.active ? 500 : 400,
+                color: item.active
+                  ? navText
+                  : navDark ? 'rgba(107,90,66,0.75)' : 'rgba(200,185,154,0.7)',
+                transition: 'color 0.35s ease',
+              }}>
+                {item.label}
+              </button>
+            </span>
+          ))}
+          <span style={{
+            margin: '0 14px', fontSize: 9,
+            color: navDark ? 'rgba(160,144,128,0.5)' : 'rgba(200,169,110,0.35)',
+            lineHeight: 1,
+          }}>·</span>
+          <span style={{
+            fontFamily: 'Ronzino, sans-serif', fontSize: 13, letterSpacing: '0.02em',
+            color: navDark ? 'rgba(160,144,128,0.45)' : 'rgba(200,185,154,0.35)',
+            transition: 'color 0.35s ease',
+            cursor: 'default',
+          }}>
+            My Collection
+            <span style={{
+              marginLeft: 5, fontSize: 9, letterSpacing: '0.1em',
+              fontFamily: 'monospace',
+              color: navDark ? 'rgba(160,144,128,0.4)' : 'rgba(200,185,154,0.3)',
+              verticalAlign: 'middle',
+            }}>soon</span>
+          </span>
+        </nav>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
