@@ -41,3 +41,8 @@ body {
   font-family: 'Ronzino', sans-serif;
   background: #f7f4f0;
 }
+
+@keyframes slideProgress {
+  from { width: 0 }
+  to { width: 100% }
+}

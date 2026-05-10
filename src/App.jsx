@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from './supabase'
 import WhiskyCard from './components/WhiskyCard'
+
+const SLIDE_DURATION = 6000
 
 const NAV_ITEMS = [
   { label: 'All', value: 'All' },
@@ -48,8 +50,7 @@ function Chip({ label, active, onClick }) {
       background: active ? '#fdf5e8' : '#fff',
       color: active ? '#8a5c10' : '#6b5a42',
       cursor: 'pointer', fontFamily: 'Ronzino, sans-serif',
-      fontWeight: active ? 500 : 400,
-      transition: 'all 0.15s',
+      fontWeight: active ? 500 : 400, transition: 'all 0.15s',
     }}>{label}</button>
   )
 }
@@ -58,7 +59,7 @@ function SortDropdown({ open, value, onChange }) {
   if (!open) return null
   return (
     <div style={{
-      position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 100,
+      position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 300,
       background: '#fff', border: '1px solid #ede5d8', borderRadius: 4,
       boxShadow: '0 12px 40px rgba(0,0,0,0.12)', minWidth: 200,
       fontFamily: 'Ronzino, sans-serif', overflow: 'hidden',
@@ -67,14 +68,13 @@ function SortDropdown({ open, value, onChange }) {
         <button key={opt.value} onClick={() => onChange(opt.value)} style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           width: '100%', padding: '10px 16px', background: 'none', border: 'none',
-          cursor: 'pointer', fontSize: 12, color: '#1a1208', textAlign: 'left',
-          fontFamily: 'Ronzino, sans-serif',
+          borderBottom: '1px solid #f7f4f0', cursor: 'pointer', fontSize: 12,
+          color: '#1a1208', textAlign: 'left', fontFamily: 'Ronzino, sans-serif',
           backgroundColor: value === opt.value ? '#f7f4f0' : 'transparent',
           fontWeight: value === opt.value ? 500 : 400,
-          borderBottom: '1px solid #f7f4f0',
         }}>
           {opt.label}
-          {value === opt.value && <span style={{ color: '#b8882a', fontSize: 13 }}>✓</span>}
+          {value === opt.value && <span style={{ color: '#b8882a' }}>✓</span>}
         </button>
       ))}
     </div>
@@ -85,7 +85,7 @@ function FilterDropdown({ open, regions, minScore, priceRange, onRegionToggle, o
   if (!open) return null
   return (
     <div style={{
-      position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 100,
+      position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 300,
       background: '#fff', border: '1px solid #ede5d8', borderRadius: 4,
       boxShadow: '0 12px 40px rgba(0,0,0,0.12)', width: 300,
       fontFamily: 'Ronzino, sans-serif',
@@ -93,27 +93,19 @@ function FilterDropdown({ open, regions, minScore, priceRange, onRegionToggle, o
       <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid #f0e8da' }}>
         <div style={{ fontSize: 10, fontWeight: 500, color: '#a09080', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Region</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-          {REGIONS.map(r => (
-            <Chip key={r} label={r} active={regions.has(r)} onClick={() => onRegionToggle(r)} />
-          ))}
+          {REGIONS.map(r => <Chip key={r} label={r} active={regions.has(r)} onClick={() => onRegionToggle(r)} />)}
         </div>
       </div>
       <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid #f0e8da' }}>
         <div style={{ fontSize: 10, fontWeight: 500, color: '#a09080', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Min Score</div>
         <div style={{ display: 'flex', gap: 5 }}>
-          {SCORE_OPTIONS.map(opt => (
-            <Chip key={String(opt.value)} label={opt.label} active={minScore === opt.value} onClick={() => onScoreChange(opt.value)} />
-          ))}
+          {SCORE_OPTIONS.map(opt => <Chip key={String(opt.value)} label={opt.label} active={minScore === opt.value} onClick={() => onScoreChange(opt.value)} />)}
         </div>
       </div>
       <div style={{ padding: '14px 18px 12px', borderBottom: activeCount > 0 ? '1px solid #f0e8da' : 'none' }}>
         <div style={{ fontSize: 10, fontWeight: 500, color: '#a09080', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Price</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-          {PRICE_OPTIONS.map(opt => (
-            <Chip key={String(opt.value)} label={opt.label}
-              active={JSON.stringify(priceRange) === JSON.stringify(opt.value)}
-              onClick={() => onPriceChange(opt.value)} />
-          ))}
+          {PRICE_OPTIONS.map(opt => <Chip key={String(opt.value)} label={opt.label} active={JSON.stringify(priceRange) === JSON.stringify(opt.value)} onClick={() => onPriceChange(opt.value)} />)}
         </div>
       </div>
       {activeCount > 0 && (
@@ -121,65 +113,165 @@ function FilterDropdown({ open, regions, minScore, priceRange, onRegionToggle, o
           <button onClick={onClear} style={{
             width: '100%', padding: '8px', border: '1px solid #e0d8cc', borderRadius: 3,
             background: '#fff', color: '#6b5a42', fontSize: 11, cursor: 'pointer',
-            fontFamily: 'Ronzino, sans-serif', letterSpacing: '0.05em',
-          }}>
-            Clear all filters
-          </button>
+            fontFamily: 'Ronzino, sans-serif',
+          }}>Clear all filters</button>
         </div>
       )}
     </div>
   )
 }
 
-function Hero({ whisky }) {
-  const [imgError, setImgError] = useState(false)
-  if (!whisky) return null
+function CarouselHero({ whiskies }) {
+  const [slide, setSlide] = useState(0)
+  const [fading, setFading] = useState(false)
+  const [imgErrors, setImgErrors] = useState(new Set())
+
+  const featured = useMemo(() =>
+    [...whiskies]
+      .filter(w => w.image_url && w.tasting_note)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5),
+    [whiskies]
+  )
+
+  const goTo = (i) => {
+    if (i === slide || fading) return
+    setFading(true)
+    setTimeout(() => { setSlide(i); setFading(false) }, 420)
+  }
+
+  useEffect(() => {
+    if (featured.length < 2) return
+    const timer = setInterval(() => {
+      setFading(true)
+      setTimeout(() => {
+        setSlide(i => (i + 1) % featured.length)
+        setFading(false)
+      }, 420)
+    }, SLIDE_DURATION)
+    return () => clearInterval(timer)
+  }, [featured.length])
+
+  if (!featured.length) return null
+
+  const w = featured[slide]
+  const showImg = w.image_url && !imgErrors.has(w.id)
+
   return (
     <div style={{
+      height: '100vh', position: 'relative', overflow: 'hidden',
       background: '#1a1208',
-      padding: '52px 48px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 40,
-      overflow: 'hidden',
-      position: 'relative',
     }}>
-      <div style={{ flex: 1, maxWidth: 520 }}>
-        <div style={{ fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#6b5a42', marginBottom: 16, fontFamily: 'Ronzino, sans-serif' }}>
-          Editor's Pick · {whisky.region}
-        </div>
-        <div style={{ fontSize: 38, fontWeight: 700, color: '#f5e6c8', lineHeight: 1.12, marginBottom: 10, fontFamily: 'Ronzino, sans-serif' }}>
-          {whisky.title}
-        </div>
-        <div style={{ fontSize: 12, color: '#6b5a42', marginBottom: 24, letterSpacing: '0.04em', fontFamily: 'Ronzino, sans-serif' }}>
-          {whisky.distillery}
-          {whisky.age && ` · ${whisky.age} Year Old`}
-          {whisky.abv && ` · ${whisky.abv}%`}
-        </div>
-        {whisky.tasting_note && (
-          <div style={{ fontSize: 14, color: '#a09080', lineHeight: 1.75, fontStyle: 'italic', marginBottom: 32, maxWidth: 420, fontFamily: 'Ronzino, sans-serif' }}>
-            "{whisky.tasting_note.length > 160 ? whisky.tasting_note.slice(0, 157) + '…' : whisky.tasting_note}"
+      {/* Warm radial glow behind bottle */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 72% 50%, #2e1c0a 0%, #1a1208 58%)',
+      }} />
+
+      {/* Slide content */}
+      <div style={{
+        position: 'relative', zIndex: 1, display: 'flex',
+        height: '100%', width: '100%',
+        opacity: fading ? 0 : 1,
+        transition: 'opacity 0.42s ease',
+      }}>
+        {/* Left — text */}
+        <div style={{
+          flex: '0 0 55%', display: 'flex', flexDirection: 'column',
+          justifyContent: 'center', padding: '100px 64px 80px',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22,
+            fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase',
+            fontFamily: 'Ronzino, sans-serif',
+          }}>
+            <span style={{ color: '#c8a96e', fontWeight: 500 }}>{String(slide + 1).padStart(2, '0')}</span>
+            <span style={{ color: '#3d2e1a' }}>·</span>
+            <span style={{ color: '#6b5a42' }}>{w.region}</span>
           </div>
-        )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          {whisky.price_gbp && (
-            <span style={{ fontSize: 22, fontWeight: 500, color: '#c8a96e', fontFamily: 'Ronzino, sans-serif' }}>
-              £{whisky.price_gbp}
-            </span>
+
+          <div style={{
+            fontSize: 48, fontWeight: 700, color: '#f5e6c8', lineHeight: 1.08,
+            marginBottom: 14, fontFamily: 'Ronzino, sans-serif', letterSpacing: '-0.5px',
+          }}>
+            {w.title}
+          </div>
+
+          <div style={{
+            fontSize: 12, color: '#6b5a42', marginBottom: 32,
+            letterSpacing: '0.07em', fontFamily: 'Ronzino, sans-serif',
+          }}>
+            {w.distillery}
+            {w.age ? ` · ${w.age} Year Old` : ''}
+            {w.abv ? ` · ${w.abv}%` : ''}
+          </div>
+
+          {w.tasting_note && (
+            <div style={{
+              fontSize: 14, color: '#9a8878', lineHeight: 1.85,
+              fontStyle: 'italic', marginBottom: 40, maxWidth: 400,
+              fontFamily: 'Ronzino, sans-serif',
+            }}>
+              "{w.tasting_note.length > 180 ? w.tasting_note.slice(0, 177) + '…' : w.tasting_note}"
+            </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontSize: 14, color: '#c8a96e' }}>★</span>
-            <span style={{ fontSize: 15, fontWeight: 500, color: '#f5e6c8', fontFamily: 'Ronzino, sans-serif' }}>{whisky.score}</span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginBottom: 52 }}>
+            {w.price_gbp && (
+              <span style={{ fontSize: 26, fontWeight: 500, color: '#c8a96e', fontFamily: 'Ronzino, sans-serif' }}>
+                £{w.price_gbp}
+              </span>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 16, color: '#c8a96e' }}>★</span>
+              <span style={{ fontSize: 17, fontWeight: 500, color: '#f5e6c8', fontFamily: 'Ronzino, sans-serif' }}>
+                {w.score}
+              </span>
+            </div>
           </div>
+
+          {/* Dot nav */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {featured.map((_, i) => (
+              <button key={i} onClick={() => goTo(i)} style={{
+                width: slide === i ? 28 : 6, height: 6, borderRadius: 3,
+                background: slide === i ? '#c8a96e' : '#3d2e1a',
+                border: 'none', cursor: 'pointer', padding: 0,
+                transition: 'width 0.35s ease, background 0.35s ease',
+              }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Right — bottle */}
+        <div style={{
+          flex: '0 0 45%', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', paddingTop: 60,
+        }}>
+          {showImg && (
+            <img
+              src={w.image_url}
+              alt={w.title}
+              onError={() => setImgErrors(prev => new Set([...prev, w.id]))}
+              style={{
+                height: '72%', maxWidth: '78%', objectFit: 'contain',
+                filter: 'drop-shadow(0 40px 70px rgba(0,0,0,0.65))',
+              }}
+            />
+          )}
         </div>
       </div>
-      {whisky.image_url && !imgError && (
-        <div style={{ flexShrink: 0, width: 180, height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src={whisky.image_url} alt={whisky.title} onError={() => setImgError(true)}
-            style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.5))' }} />
-        </div>
-      )}
+
+      {/* Progress bar */}
+      <div key={`pb-${slide}`} style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        height: 2, background: 'rgba(200,169,110,0.15)', zIndex: 2,
+      }}>
+        <div style={{
+          height: '100%', background: '#c8a96e',
+          animation: `slideProgress ${SLIDE_DURATION}ms linear forwards`,
+        }} />
+      </div>
     </div>
   )
 }
@@ -198,6 +290,7 @@ function App() {
   const [filterMinScore, setFilterMinScore] = useState(null)
   const [filterPriceRange, setFilterPriceRange] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [navScrolled, setNavScrolled] = useState(false)
 
   const sortRef = useRef(null)
   const filterRef = useRef(null)
@@ -212,6 +305,12 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const handleScroll = () => setNavScrolled(window.scrollY > window.innerHeight - 70)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
     function handleClick(e) {
       if (sortRef.current && !sortRef.current.contains(e.target)) setShowSort(false)
       if (filterRef.current && !filterRef.current.contains(e.target)) setShowFilter(false)
@@ -220,21 +319,17 @@ function App() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const toggleSave = (id) => {
-    setSaved(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
+  const toggleSave = (id) => setSaved(prev => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
 
-  const toggleRegion = (r) => {
-    setFilterRegions(prev => {
-      const next = new Set(prev)
-      next.has(r) ? next.delete(r) : next.add(r)
-      return next
-    })
-  }
+  const toggleRegion = (r) => setFilterRegions(prev => {
+    const next = new Set(prev)
+    next.has(r) ? next.delete(r) : next.add(r)
+    return next
+  })
 
   const clearFilters = () => {
     setFilterRegions(new Set())
@@ -265,29 +360,41 @@ function App() {
       return 0
     })
 
-  const featured = [...whiskies].sort((a, b) => b.score - a.score)[0]
   const sortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? 'Score: High → Low'
 
   if (loading) return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f7f4f0', fontFamily: 'Ronzino, sans-serif', color: '#a09080', fontSize: 13, letterSpacing: '0.08em' }}>
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1208', fontFamily: 'Ronzino, sans-serif', color: '#6b5a42', fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
       Loading…
     </div>
   )
 
+  const navLight = !navScrolled
+
   return (
     <div style={{ fontFamily: 'Ronzino, sans-serif', background: '#f7f4f0', minHeight: '100vh' }}>
 
-      {/* Navbar */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #f0ebe2', padding: '0 40px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 22, fontWeight: 500, color: '#1a1208', letterSpacing: '-0.3px', fontFamily: 'Ronzino, sans-serif' }}>
+      {/* Fixed navbar */}
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+        background: navScrolled ? '#fff' : 'transparent',
+        borderBottom: navScrolled ? '1px solid #f0ebe2' : 'none',
+        padding: '0 40px', height: 60,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        transition: 'background 0.4s ease, border-color 0.4s ease',
+      }}>
+        <span style={{
+          fontSize: 22, fontWeight: 500, letterSpacing: '-0.3px',
+          fontFamily: 'Ronzino, sans-serif',
+          color: navLight ? '#f5e6c8' : '#1a1208',
+          transition: 'color 0.4s ease',
+        }}>
           The Bottle Keep
         </span>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          {/* Inline search */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            borderBottom: searchOpen ? '1px solid #1a1208' : '1px solid transparent',
+            borderBottom: searchOpen ? `1px solid ${navLight ? '#f5e6c8' : '#1a1208'}` : '1px solid transparent',
             paddingBottom: 2, transition: 'border-color 0.2s',
           }}>
             {searchOpen && (
@@ -298,66 +405,77 @@ function App() {
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 onBlur={() => { if (!query) setSearchOpen(false) }}
-                style={{ border: 'none', outline: 'none', fontSize: 12, fontFamily: 'Ronzino, sans-serif', color: '#1a1208', background: 'transparent', width: 180 }}
+                style={{
+                  border: 'none', outline: 'none', fontSize: 12,
+                  fontFamily: 'Ronzino, sans-serif', background: 'transparent',
+                  color: navLight ? '#f5e6c8' : '#1a1208', width: 180,
+                }}
               />
             )}
-            <button onClick={() => setSearchOpen(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b5a42', display: 'flex', alignItems: 'center', padding: 0 }}>
+            <button onClick={() => setSearchOpen(v => !v)} style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              color: navLight ? '#c8b89a' : '#6b5a42', display: 'flex', alignItems: 'center',
+              transition: 'color 0.4s ease',
+            }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             </button>
           </div>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b5a42', display: 'flex', alignItems: 'center', padding: 0 }}>
+          <button style={{
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            color: navLight ? '#c8b89a' : '#6b5a42', display: 'flex', alignItems: 'center',
+            transition: 'color 0.4s ease',
+          }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </button>
         </div>
       </div>
 
-      {/* Subnav */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #f0ebe2', padding: '0 40px', height: 44, display: 'flex', alignItems: 'center', gap: 32, overflowX: 'auto' }}>
+      {/* Full-bleed carousel hero */}
+      <CarouselHero whiskies={whiskies} />
+
+      {/* Sticky subnav */}
+      <div style={{
+        position: 'sticky', top: 60, zIndex: 100,
+        background: '#fff', borderBottom: '1px solid #f0ebe2',
+        padding: '0 40px', height: 44,
+        display: 'flex', alignItems: 'center', gap: 32, overflowX: 'auto',
+      }}>
         {NAV_ITEMS.map(item => (
-          <button
-            key={item.value}
-            onClick={() => setActiveNav(item.value)}
-            style={{
-              fontSize: 12,
-              letterSpacing: '0.04em',
-              color: activeNav === item.value ? '#1a1208' : '#a09080',
-              fontWeight: activeNav === item.value ? 500 : 400,
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: 'Ronzino, sans-serif', padding: 0,
-              height: 44, whiteSpace: 'nowrap', flexShrink: 0,
-              borderBottom: activeNav === item.value ? '1px solid #1a1208' : '1px solid transparent',
-              transition: 'color 0.15s',
-            }}>
+          <button key={item.value} onClick={() => setActiveNav(item.value)} style={{
+            fontSize: 12, letterSpacing: '0.04em',
+            color: activeNav === item.value ? '#1a1208' : '#a09080',
+            fontWeight: activeNav === item.value ? 500 : 400,
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontFamily: 'Ronzino, sans-serif', padding: 0,
+            height: 44, whiteSpace: 'nowrap', flexShrink: 0,
+            borderBottom: activeNav === item.value ? '1px solid #1a1208' : '1px solid transparent',
+            transition: 'color 0.15s',
+          }}>
             {item.label}
           </button>
         ))}
       </div>
 
-      {/* Hero */}
-      <Hero whisky={featured} />
-
       {/* Content */}
       <div style={{ padding: '32px 40px' }}>
 
         {/* Results + controls bar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, paddingBottom: 18, borderBottom: '1px solid #ede5d8' }}>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          marginBottom: 28, paddingBottom: 18, borderBottom: '1px solid #ede5d8',
+        }}>
           <span style={{ fontSize: 12, color: '#a09080', letterSpacing: '0.02em' }}>
             {filtered.length} whisk{filtered.length === 1 ? 'y' : 'ies'}
             {saved.size > 0 && <span style={{ marginLeft: 12, color: '#b8882a' }}>{saved.size} saved</span>}
           </span>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-
-            {/* Sort */}
             <div ref={sortRef} style={{ position: 'relative' }}>
-              <button
-                onClick={() => { setShowSort(v => !v); setShowFilter(false) }}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: 12, color: '#1a1208', fontFamily: 'Ronzino, sans-serif',
-                  display: 'flex', alignItems: 'center', gap: 5, padding: 0,
-                  letterSpacing: '0.02em',
-                }}>
+              <button onClick={() => { setShowSort(v => !v); setShowFilter(false) }} style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontSize: 12, color: '#1a1208', fontFamily: 'Ronzino, sans-serif',
+                display: 'flex', alignItems: 'center', gap: 5, letterSpacing: '0.02em',
+              }}>
                 Sort: {sortLabel}
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: showSort ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
                   <polyline points="6 9 12 15 18 9"/>
@@ -366,18 +484,14 @@ function App() {
               <SortDropdown open={showSort} value={sortBy} onChange={v => { setSortBy(v); setShowSort(false) }} />
             </div>
 
-            <span style={{ color: '#ddd4c4', fontSize: 14 }}>·</span>
+            <span style={{ color: '#ddd4c4' }}>·</span>
 
-            {/* Filter */}
             <div ref={filterRef} style={{ position: 'relative' }}>
-              <button
-                onClick={() => { setShowFilter(v => !v); setShowSort(false) }}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: 12, fontFamily: 'Ronzino, sans-serif', padding: 0,
-                  color: activeFilterCount > 0 ? '#b8882a' : '#1a1208',
-                  letterSpacing: '0.02em',
-                }}>
+              <button onClick={() => { setShowFilter(v => !v); setShowSort(false) }} style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontSize: 12, fontFamily: 'Ronzino, sans-serif',
+                color: activeFilterCount > 0 ? '#b8882a' : '#1a1208', letterSpacing: '0.02em',
+              }}>
                 Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
               </button>
               <FilterDropdown
@@ -393,15 +507,13 @@ function App() {
               />
             </div>
 
-            <span style={{ color: '#ddd4c4', fontSize: 14 }}>·</span>
+            <span style={{ color: '#ddd4c4' }}>·</span>
 
-            {/* View toggle */}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 12 }}>
               {['grid', 'list'].map(v => (
                 <button key={v} onClick={() => setView(v)} style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  color: view === v ? '#1a1208' : '#c8b89a',
-                  display: 'flex', alignItems: 'center',
+                  color: view === v ? '#1a1208' : '#c8b89a', display: 'flex', alignItems: 'center',
                   transition: 'color 0.15s',
                 }}>
                   {v === 'grid'
@@ -426,7 +538,7 @@ function App() {
             ? filtered.map(w => (
                 <WhiskyCard key={w.id} whisky={w} saved={saved.has(w.id)} onSave={toggleSave} view={view} />
               ))
-            : <p style={{ color: '#a09080', fontSize: 13, letterSpacing: '0.02em' }}>No whiskies found.</p>
+            : <p style={{ color: '#a09080', fontSize: 13 }}>No whiskies found.</p>
           }
         </div>
       </div>
