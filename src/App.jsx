@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import whiskies from './data/whiskies'
+import { useState, useEffect } from 'react'
+import { supabase } from './supabase'
 import WhiskyCard from './components/WhiskyCard'
 
 const FILTERS = ['All', 'Single Malt', 'Blend', 'Grain']
@@ -8,6 +8,20 @@ function App() {
   const [query, setQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState('All')
   const [saved, setSaved] = useState(new Set())
+  const [whiskies, setWhiskies] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchWhiskies() {
+      const { data, error } = await supabase
+        .from('whiskies')
+        .select('*')
+        .limit(200)
+      if (!error) setWhiskies(data)
+      setLoading(false)
+    }
+    fetchWhiskies()
+  }, [])
 
   const toggleSave = (id) => {
     setSaved(prev => {
@@ -19,9 +33,11 @@ function App() {
 
   const filtered = whiskies.filter(w => {
     const matchesType = activeFilter === 'All' || w.type === activeFilter
-    const matchesQuery = [w.name, w.distillery, w.region].join(' ').toLowerCase().includes(query.toLowerCase())
+    const matchesQuery = [w.title, w.distillery, w.region].join(' ').toLowerCase().includes(query.toLowerCase())
     return matchesType && matchesQuery
   })
+
+if (loading) return <div className="p-8 text-gray-400">Loading whiskies…</div>
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 max-w-4xl mx-auto">
