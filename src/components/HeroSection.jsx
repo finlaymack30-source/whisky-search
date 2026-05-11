@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useMemo } from 'react'
 import scotlandGeo from '../data/scotland-geo.json'
 
 // Real boundary data from OpenStreetMap admin boundaries
@@ -75,7 +75,7 @@ function drawElevContours(ctx, zone, W, H, t, breath) {
   const baseR = scale * zone.r
   for (let ring = 0; ring < 5; ring++) {
     const r = baseR * (0.3 + ring * 0.18)
-    const alpha = Math.max(0, (0.16 - ring * 0.025) * (1 + Math.sin(breath + ring) * 0.1))
+    const alpha = Math.max(0, (0.08 - ring * 0.012) * (1 + Math.sin(breath + ring) * 0.1))
     ctx.save()
     ctx.globalAlpha = alpha
     ctx.strokeStyle = '#c8a96e'
@@ -99,32 +99,23 @@ function drawElevContours(ctx, zone, W, H, t, breath) {
   }
 }
 
-function drawTradeRoute(ctx, x0, y0, W, H, dir, t) {
-  const configs = dir === 'west'
-    ? [
-        { cx1: x0 - W * 0.10, cy1: y0 + H * 0.05, cx2: W * 0.06, cy2: y0 + H * 0.10, ex: -30, ey: y0 + H * 0.12 },
-        { cx1: x0 - W * 0.10, cy1: y0 - H * 0.03, cx2: W * 0.04, cy2: y0 - H * 0.02, ex: -30, ey: y0 - H * 0.01 },
-      ]
-    : [
-        { cx1: x0 + W * 0.10, cy1: y0 - H * 0.04, cx2: W * 0.88, cy2: y0 - H * 0.08, ex: W + 30, ey: y0 - H * 0.07 },
-        { cx1: x0 + W * 0.08, cy1: y0 + H * 0.03, cx2: W * 0.86, cy2: y0 + H * 0.01, ex: W + 30, ey: y0 + H * 0.02 },
-      ]
-
-  configs.forEach((cfg, i) => {
+function drawRoute(ctx, x0, y0, cp1x, cp1y, cp2x, cp2y, ex, ey, t, dir) {
+  const drift = dir === 'west' ? 1 : -1
+  for (let i = 0; i < 2; i++) {
     ctx.save()
-    ctx.globalAlpha = 0.20 - i * 0.05
+    ctx.globalAlpha = 0.62 - i * 0.18
     ctx.strokeStyle = '#c8a96e'
-    ctx.lineWidth = 0.9 - i * 0.2
-    ctx.setLineDash([5, 13])
-    ctx.lineDashOffset = -(t * 18) * (dir === 'west' ? 1 : -1) - i * 7
-    ctx.shadowBlur = 3
-    ctx.shadowColor = 'rgba(200,169,110,0.2)'
+    ctx.lineWidth = 1.5 - i * 0.3
+    ctx.setLineDash([5, 12])
+    ctx.lineDashOffset = -(t * 18) * drift - i * 8
+    ctx.shadowBlur = 8
+    ctx.shadowColor = 'rgba(200,169,110,0.45)'
     ctx.beginPath()
     ctx.moveTo(x0, y0)
-    ctx.bezierCurveTo(cfg.cx1, cfg.cy1, cfg.cx2, cfg.cy2, cfg.ex, cfg.ey)
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, ex, ey)
     ctx.stroke()
     ctx.restore()
-  })
+  }
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -137,12 +128,13 @@ export default function HeroSection({ whiskies = [], onRegionSelect }) {
   const hoverRef = useRef(null)
   const dimRef = useRef({ W: 0, H: 0, dpr: 1 })
   const [hoveredRegion, setHoveredRegion] = useState(null)
-  const [pickedRegion, setPickedRegion] = useState(null)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
 
-  const getEditorPick = (regionId) =>
-    whiskies.find(w => w.region === regionId && w.image_url) ||
-    whiskies.find(w => w.region === regionId) ||
-    null
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -173,11 +165,10 @@ export default function HeroSection({ whiskies = [], onRegionSelect }) {
       for (const r of SCOTTISH_REGIONS) {
         const p = project(r.lat, r.lon, W, H)
         if (Math.hypot(cx - p.x, cy - p.y) < 20) {
-          setPickedRegion(prev => prev?.id === r.id ? null : r)
+          onRegionSelect?.(r.id)
           return
         }
       }
-      setPickedRegion(null)
     }
     canvas.addEventListener('mousemove', onMove)
     canvas.addEventListener('mouseleave', onLeave)
@@ -205,7 +196,7 @@ export default function HeroSection({ whiskies = [], onRegionSelect }) {
 
       // Centre glow
       const glow = ctx.createRadialGradient(W * 0.42, H * 0.5, 0, W * 0.42, H * 0.5, W * 0.48)
-      glow.addColorStop(0, 'rgba(200,169,110,0.045)')
+      glow.addColorStop(0, 'rgba(200,169,110,0.022)')
       glow.addColorStop(1, 'rgba(0,0,0,0)')
       ctx.fillStyle = glow
       ctx.fillRect(0, 0, W, H)
@@ -213,50 +204,63 @@ export default function HeroSection({ whiskies = [], onRegionSelect }) {
       // Edge vignette
       const vig = ctx.createRadialGradient(W * 0.5, H * 0.5, H * 0.25, W * 0.5, H * 0.5, W * 0.72)
       vig.addColorStop(0, 'rgba(0,0,0,0)')
-      vig.addColorStop(1, 'rgba(0,0,0,0.65)')
+      vig.addColorStop(1, 'rgba(0,0,0,0.38)')
       ctx.fillStyle = vig
       ctx.fillRect(0, 0, W, H)
 
       // Elevation contours
       ELEV_ZONES.forEach(z => drawElevContours(ctx, z, W, H, t, breath))
 
-      // Trade routes from the main body of Scotland
-      const westOrigin = project(57.3, -5.8, W, H)
-      const eastOrigin = project(57.6, -2.2, W, H)
-      drawTradeRoute(ctx, westOrigin.x, westOrigin.y, W, H, 'west', t)
-      drawTradeRoute(ctx, eastOrigin.x, eastOrigin.y, W, H, 'east', t)
+      // Named trade routes
+      const camp = project(55.43, -5.62, W, H)  // Campbeltown
+      const low  = project(55.88, -3.45, W, H)  // Lowlands
+      const high = project(57.10, -4.10, W, H)  // Highlands
 
-      // Route labels
-      ctx.save()
-      ctx.font = '500 8px monospace'
-      ctx.fillStyle = 'rgba(200,169,110,0.28)'
-      ctx.fillText('← AMERICAS', 14, H * 0.60)
-      ctx.textAlign = 'right'
-      ctx.fillText('EAST ASIA →', W - 14, H * 0.41)
-      ctx.restore()
+      // Campbeltown → Americas (S-curve west)
+      drawRoute(ctx,
+        camp.x, camp.y,
+        camp.x - W * 0.04, camp.y - H * 0.14,
+        W * 0.07, H * 0.64,
+        -30, H * 0.57,
+        t, 'west')
+
+      // Lowlands → Taiwan (arcs SE)
+      drawRoute(ctx,
+        low.x, low.y,
+        low.x + W * 0.09, low.y + H * 0.06,
+        W * 0.80, H * 0.88,
+        W + 30, H * 0.86,
+        t, 'east')
+
+      // Highlands → Japan (arcs NE)
+      drawRoute(ctx,
+        high.x, high.y,
+        high.x + W * 0.12, high.y - H * 0.10,
+        W * 0.83, H * 0.22,
+        W + 30, H * 0.26,
+        t, 'east')
+
 
       // ── Coastlines (real OSM data) ──
       const off = -t * 16
 
       // Mainland — most prominent line
-      strokePoly(ctx, scotlandGeo.mainland, W, H, off, 0.78, 1.3)
+      strokePoly(ctx, scotlandGeo.mainland, W, H, off, 0.96, 2.0)
 
       // Outer islands — slightly fainter
-      strokePoly(ctx, scotlandGeo.island_2, W, H, off * 0.85, 0.48)   // Skye / S Hebrides
-      strokePoly(ctx, scotlandGeo.island_3, W, H, off * 0.85, 0.44)   // Lewis & Harris
-      strokePoly(ctx, scotlandGeo.island_4, W, H, off * 0.8,  0.38)   // Orkney
-      strokePoly(ctx, scotlandGeo.island_5, W, H, off,        0.55)   // Islay (whisky region)
+      strokePoly(ctx, scotlandGeo.island_2, W, H, off * 0.85, 0.68)   // Skye / S Hebrides
+      strokePoly(ctx, scotlandGeo.island_3, W, H, off * 0.85, 0.62)   // Lewis & Harris
+      strokePoly(ctx, scotlandGeo.island_4, W, H, off * 0.8,  0.55)   // Orkney
+      strokePoly(ctx, scotlandGeo.island_5, W, H, off,        0.75)   // Islay (whisky region)
 
       // ── Region markers ──
       const { x: mx, y: my } = mouseRef.current
       let newHov = null
-      const pickedId = pickedRegion?.id
 
       SCOTTISH_REGIONS.forEach(region => {
         const pos = project(region.lat, region.lon, W, H)
         const tone = REGION_TONES[region.id]
         const isHov = hoverRef.current === region.id
-        const isPicked = pickedId === region.id
 
         if (mx > 0 && Math.hypot(mx - pos.x, my - pos.y) < 22) newHov = region.id
 
@@ -275,15 +279,15 @@ export default function HeroSection({ whiskies = [], onRegionSelect }) {
 
         // Dot
         ctx.save()
-        ctx.globalAlpha = isHov || isPicked ? 1 : 0.68
+        ctx.globalAlpha = isHov ? 1 : 0.68
         ctx.beginPath()
-        ctx.arc(pos.x, pos.y, isHov || isPicked ? 5 : 3.2, 0, Math.PI * 2)
+        ctx.arc(pos.x, pos.y, isHov ? 5 : 3.2, 0, Math.PI * 2)
         ctx.fillStyle = tone
-        ctx.shadowBlur = isHov || isPicked ? 16 : 7
+        ctx.shadowBlur = isHov ? 16 : 7
         ctx.shadowColor = tone
         ctx.fill()
 
-        if (isHov || isPicked) {
+        if (isHov) {
           ctx.globalAlpha = 0.35
           ctx.beginPath()
           ctx.arc(pos.x, pos.y, 10 + Math.sin(t * 2.8) * 1.8, 0, Math.PI * 2)
@@ -296,8 +300,8 @@ export default function HeroSection({ whiskies = [], onRegionSelect }) {
 
         // Label
         ctx.save()
-        ctx.globalAlpha = isHov || isPicked ? 0.88 : 0.32
-        ctx.font = `${isHov || isPicked ? '500' : '400'} 9px monospace`
+        ctx.globalAlpha = isHov ? 1.0 : 0.55
+        ctx.font = `${isHov ? '500' : '400'} 9px monospace`
         ctx.fillStyle = tone
         ctx.fillText(region.id.toUpperCase(), pos.x + 9, pos.y + 3)
         ctx.restore()
@@ -320,12 +324,11 @@ export default function HeroSection({ whiskies = [], onRegionSelect }) {
       canvas.removeEventListener('mouseleave', onLeave)
       canvas.removeEventListener('click', onClick)
     }
-  }, [pickedRegion])
+  }, [])
 
   const activeRegion = hoveredRegion
     ? SCOTTISH_REGIONS.find(r => r.id === hoveredRegion)
     : null
-  const pick = pickedRegion ? getEditorPick(pickedRegion.id) : null
 
   return (
     <div style={{
@@ -335,6 +338,48 @@ export default function HeroSection({ whiskies = [], onRegionSelect }) {
     }}>
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
 
+      {/* Nav scrim */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 130,
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.52), rgba(0,0,0,0))',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Tagline — desktop only */}
+      {!isMobile && (
+        <div style={{
+          position: 'absolute',
+          ...(isMobile
+            ? { left: '50%', top: '42%', transform: 'translate(-50%, -50%)', textAlign: 'center', width: '82%' }
+            : { right: 120, top: '50%', transform: 'translateY(-50%)', textAlign: 'right' }
+          ),
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            fontFamily: 'Ronzino, sans-serif',
+            fontSize: isMobile ? 30 : 42,
+            fontWeight: 600,
+            color: '#ffffff', letterSpacing: '0.01em', lineHeight: 1.15,
+            textShadow: '0 2px 24px rgba(0,0,0,0.5)',
+          }}>
+            The Whisky World,<br />Made Legible.
+          </div>
+          <div style={{
+            marginTop: 14, height: 1,
+            background: isMobile
+              ? 'linear-gradient(to right, rgba(200,169,110,0), rgba(200,169,110,0.70), rgba(200,169,110,0))'
+              : 'linear-gradient(to left, rgba(200,169,110,0.70), rgba(200,169,110,0))',
+          }} />
+          <div style={{
+            marginTop: 10, fontFamily: 'monospace', fontSize: 8,
+            letterSpacing: '0.20em', color: 'rgba(200,169,110,0.72)',
+            textTransform: 'uppercase',
+          }}>
+            57°36′N · 3°59′W · Scotland
+          </div>
+        </div>
+      )}
+
       {/* Grain */}
       <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.04, pointerEvents: 'none' }}>
         <filter id='gra'><feTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter>
@@ -342,7 +387,7 @@ export default function HeroSection({ whiskies = [], onRegionSelect }) {
       </svg>
 
       {/* Hover tooltip */}
-      {activeRegion && !pickedRegion && (
+      {activeRegion && (
         <div style={{
           position: 'absolute', bottom: 52, left: '50%', transform: 'translateX(-50%)',
           pointerEvents: 'none', textAlign: 'center', animation: 'fadeUp 0.18s ease',
@@ -359,80 +404,30 @@ export default function HeroSection({ whiskies = [], onRegionSelect }) {
         </div>
       )}
 
-      {/* Editor's pick panel */}
-      {pickedRegion && (
-        <div key={pickedRegion.id} style={{
-          position: 'absolute', right: 40, top: '50%', transform: 'translateY(-50%)',
-          width: 240, background: 'rgba(8,8,8,0.94)',
-          border: '1px solid rgba(200,169,110,0.18)',
-          borderLeft: `2px solid ${REGION_TONES[pickedRegion.id]}`,
-          padding: '22px 24px 20px', animation: 'slideIn 0.24s ease',
-        }}>
-          <button onClick={() => setPickedRegion(null)} style={{
-            position: 'absolute', top: 10, right: 12, background: 'none', border: 'none',
-            cursor: 'pointer', color: 'rgba(200,169,110,0.38)', fontFamily: 'monospace', fontSize: 12, padding: 0,
-          }}>✕</button>
-
-          <div style={{ fontFamily: 'monospace', fontSize: 8, letterSpacing: '0.2em', color: REGION_TONES[pickedRegion.id], textTransform: 'uppercase', marginBottom: 10 }}>
-            Editor's Pick · {pickedRegion.id}
-          </div>
-
-          {pick ? (
-            <>
-              {pick.image_url && (
-                <div style={{ marginBottom: 14, height: 120, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                  <img src={pick.image_url} alt={pick.title} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', mixBlendMode: 'luminosity' }} />
-                </div>
-              )}
-              <div style={{ fontFamily: 'Ronzino, sans-serif', fontSize: 16, color: '#f5e6c8', fontWeight: 600, lineHeight: 1.25, marginBottom: 6, letterSpacing: '0.02em' }}>
-                {pick.title}
-              </div>
-              {pick.distillery && (
-                <div style={{ fontFamily: 'monospace', fontSize: 9, color: 'rgba(200,169,110,0.52)', marginBottom: 10, letterSpacing: '0.06em' }}>
-                  {pick.distillery}
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-                {pick.age && <span style={{ fontFamily: 'monospace', fontSize: 8, color: 'rgba(200,169,110,0.40)', letterSpacing: '0.1em' }}>{pick.age}yr</span>}
-                {pick.abv && <span style={{ fontFamily: 'monospace', fontSize: 8, color: 'rgba(200,169,110,0.40)', letterSpacing: '0.1em' }}>{pick.abv}%</span>}
-              </div>
-            </>
-          ) : (
-            <div style={{ fontFamily: 'monospace', fontSize: 9, color: 'rgba(200,169,110,0.42)', lineHeight: 1.7, marginBottom: 16 }}>
-              {pickedRegion.note}
-            </div>
-          )}
-
-          <button
-            onClick={() => { onRegionSelect?.(pickedRegion.id); setPickedRegion(null) }}
-            style={{
-              width: '100%', padding: '9px 0',
-              background: 'rgba(200,169,110,0.07)', border: '1px solid rgba(200,169,110,0.22)',
-              color: '#c8a96e', fontFamily: 'monospace', fontSize: 9,
-              letterSpacing: '0.14em', cursor: 'pointer', textTransform: 'uppercase',
-            }}
-          >
-            Explore {pickedRegion.id} →
-          </button>
-        </div>
-      )}
-
       {/* Coordinate mark */}
       <div style={{
         position: 'absolute', bottom: 22, left: 28,
         fontFamily: 'monospace', fontSize: 8, letterSpacing: '0.14em',
-        color: 'rgba(200,169,110,0.2)', pointerEvents: 'none',
+        color: 'rgba(200,169,110,0.45)', pointerEvents: 'none',
       }}>
         57°N 4°W
       </div>
 
       {/* Scroll hint */}
       <div style={{
-        position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)',
-        fontFamily: 'monospace', fontSize: 8, letterSpacing: '0.22em',
-        color: 'rgba(200,169,110,0.22)', textTransform: 'uppercase', pointerEvents: 'none',
+        position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+        pointerEvents: 'none',
       }}>
-        Scroll to explore
+        <div style={{
+          fontFamily: 'Ronzino, sans-serif', fontSize: 11, letterSpacing: '0.18em',
+          color: 'rgba(200,169,110,0.72)', textTransform: 'uppercase', fontWeight: 500,
+        }}>
+          Scroll to explore
+        </div>
+        <svg width="36" height="20" viewBox="0 0 36 20" fill="none" style={{ animation: 'scrollBounce 2.2s ease-in-out infinite' }}>
+          <polyline points="2,2 18,18 34,2" stroke="rgba(200,169,110,0.85)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
       </div>
 
       <style>{`
@@ -440,9 +435,9 @@ export default function HeroSection({ whiskies = [], onRegionSelect }) {
           from { opacity: 0; transform: translateX(-50%) translateY(8px); }
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateY(calc(-50% + 12px)); }
-          to   { opacity: 1; transform: translateY(-50%); }
+        @keyframes scrollBounce {
+          0%, 100% { transform: translateY(0); opacity: 0.7; }
+          50%       { transform: translateY(4px); opacity: 1; }
         }
       `}</style>
     </div>

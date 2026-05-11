@@ -11,6 +11,9 @@ function BottlePlaceholder() {
   )
 }
 
+const buyHref = (w) =>
+  w.buy_url || `https://www.thewhiskyexchange.com/search#q=${encodeURIComponent(w.title)}`
+
 function WhiskyCard({ whisky, saved, onSave, view }) {
   const [hovered, setHovered] = useState(false)
   const [imgError, setImgError] = useState(false)
@@ -73,6 +76,23 @@ function WhiskyCard({ whisky, saved, onSave, view }) {
               <span style={{ fontSize: 11, color: '#c8a96e' }}>★</span>
               <span style={{ fontSize: 12, fontWeight: 500, color: '#1a1208' }}>{whisky.score}</span>
             </div>
+            <a
+              href={buyHref(whisky)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              style={{
+                display: 'inline-block', marginTop: 8,
+                padding: '5px 14px', borderRadius: 2, textDecoration: 'none',
+                background: hovered ? '#c8a96e' : '#f5efe6',
+                color: hovered ? '#1a1208' : '#8a7660',
+                fontFamily: 'Ronzino, sans-serif', fontSize: 11,
+                fontWeight: 500, letterSpacing: '0.08em',
+                transition: 'background 0.2s ease, color 0.2s ease',
+              }}
+            >
+              Buy
+            </a>
           </div>
         </div>
       </div>
@@ -135,7 +155,7 @@ function WhiskyCard({ whisky, saved, onSave, view }) {
           {whisky.region && <span style={{ fontSize: 10, color: '#8a7660', background: '#f5efe6', padding: '2px 8px', borderRadius: 2 }}>{whisky.region}</span>}
           {whisky.age && <span style={{ fontSize: 10, color: '#8a7660', background: '#f5efe6', padding: '2px 8px', borderRadius: 2 }}>{whisky.age}yr</span>}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           {whisky.price_gbp
             ? <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1208' }}>£{whisky.price_gbp}</span>
             : <span />
@@ -145,6 +165,23 @@ function WhiskyCard({ whisky, saved, onSave, view }) {
             <span style={{ fontSize: 12, fontWeight: 500, color: '#1a1208' }}>{whisky.score}</span>
           </div>
         </div>
+        <a
+          href={buyHref(whisky)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          style={{
+            display: 'block', textAlign: 'center', textDecoration: 'none',
+            padding: '7px 0', borderRadius: 2,
+            background: hovered ? '#c8a96e' : '#f5efe6',
+            color: hovered ? '#1a1208' : '#8a7660',
+            fontFamily: 'Ronzino, sans-serif', fontSize: 11,
+            fontWeight: 500, letterSpacing: '0.08em',
+            transition: 'background 0.2s ease, color 0.2s ease',
+          }}
+        >
+          Buy
+        </a>
       </div>
     </div>
   )

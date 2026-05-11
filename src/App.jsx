@@ -137,6 +137,8 @@ function App() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [navScrolled, setNavScrolled] = useState(false)
   const [navHovered, setNavHovered] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const sortRef = useRef(null)
   const filterRef = useRef(null)
@@ -151,9 +153,18 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const handleScroll = () => setNavScrolled(window.scrollY > window.innerHeight - 70)
+    const handleScroll = () => {
+      setNavScrolled(window.scrollY > window.innerHeight - 70)
+      setMenuOpen(false)
+    }
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
   useEffect(() => {
@@ -240,30 +251,40 @@ function App() {
         style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
           background: navBg, borderBottom: navBorder,
-          padding: '0 40px', height: 60,
+          padding: isMobile ? '0 20px' : '0 40px', height: 60,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           transition: 'background 0.35s ease, border-color 0.35s ease',
         }}>
-        <span style={{
-          fontSize: 22, fontWeight: 500, letterSpacing: '-0.3px',
-          fontFamily: 'Ronzino, sans-serif', color: navText,
-          transition: 'color 0.35s ease',
-        }}>
-          The Bottle Keep
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, lineHeight: 1 }}>
+          <span style={{
+            fontFamily: 'monospace', fontSize: 7.5, letterSpacing: '0.38em',
+            textTransform: 'uppercase',
+            color: navDark ? 'rgba(107,90,66,0.72)' : 'rgba(200,169,110,0.72)',
+            transition: 'color 0.35s ease',
+          }}>
+            The
+          </span>
+          <span style={{
+            fontFamily: 'Ronzino, sans-serif', fontSize: 15, fontWeight: 400,
+            letterSpacing: '0.22em', textTransform: 'uppercase',
+            color: navText, transition: 'color 0.35s ease',
+          }}>
+            Bottle Keep
+          </span>
+        </div>
 
-        {/* Primary nav links */}
-        <nav style={{ display: 'flex', alignItems: 'center' }}>
+        {/* Primary nav links — desktop only */}
+        {!isMobile && <nav style={{ display: 'flex', alignItems: 'center' }}>
           {[
             { label: 'Explore',        active: true  },
             { label: 'Valuation',      active: false },
-            { label: "Editor's Picks", active: false },
+            { label: "Our Picks", active: false },
           ].map((item, i) => (
             <span key={item.label} style={{ display: 'flex', alignItems: 'center' }}>
               {i > 0 && (
                 <span style={{
                   display: 'inline-block', width: 1, height: 12, margin: '0 20px',
-                  background: navDark ? 'rgba(160,144,128,0.28)' : 'rgba(200,169,110,0.25)',
+                  background: navDark ? 'rgba(160,144,128,0.45)' : 'rgba(200,169,110,0.45)',
                   transition: 'background 0.35s ease',
                 }} />
               )}
@@ -273,7 +294,7 @@ function App() {
                 fontWeight: item.active ? 500 : 400,
                 color: item.active
                   ? navText
-                  : navDark ? 'rgba(107,90,66,0.75)' : 'rgba(200,185,154,0.7)',
+                  : navDark ? 'rgba(107,90,66,0.85)' : 'rgba(220,205,175,0.88)',
                 transition: 'color 0.35s ease',
               }}>
                 {item.label}
@@ -282,12 +303,12 @@ function App() {
           ))}
           <span style={{
             display: 'inline-block', width: 1, height: 12, margin: '0 20px',
-            background: navDark ? 'rgba(160,144,128,0.28)' : 'rgba(200,169,110,0.25)',
+            background: navDark ? 'rgba(160,144,128,0.45)' : 'rgba(200,169,110,0.45)',
             transition: 'background 0.35s ease',
           }} />
           <span style={{
             fontFamily: 'Ronzino, sans-serif', fontSize: 13, letterSpacing: '0.02em',
-            color: navDark ? 'rgba(160,144,128,0.45)' : 'rgba(200,185,154,0.35)',
+            color: navDark ? 'rgba(160,144,128,0.55)' : 'rgba(200,185,154,0.52)',
             transition: 'color 0.35s ease',
             cursor: 'default',
           }}>
@@ -299,7 +320,7 @@ function App() {
               verticalAlign: 'middle',
             }}>soon</span>
           </span>
-        </nav>
+        </nav>}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
           <div style={{
@@ -337,8 +358,74 @@ function App() {
           }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </button>
+          {isMobile && (
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 2,
+                color: navText, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'color 0.35s ease',
+              }}
+            >
+              {menuOpen ? (
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                  <line x1="2" y1="2" x2="16" y2="16"/><line x1="16" y1="2" x2="2" y2="16"/>
+                </svg>
+              ) : (
+                <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                  <line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/>
+                </svg>
+              )}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Mobile nav dropdown */}
+      {isMobile && menuOpen && (
+        <div style={{
+          position: 'fixed', top: 60, left: 0, right: 0, zIndex: 199,
+          background: navDark ? '#fff' : 'rgba(10,10,10,0.97)',
+          borderBottom: navDark ? '1px solid #f0ebe2' : '1px solid rgba(200,169,110,0.12)',
+          padding: '8px 0 16px',
+        }}>
+          {[
+            { label: 'Explore', active: true },
+            { label: 'Valuation', active: false },
+            { label: 'Our Picks', active: false },
+          ].map(item => (
+            <button key={item.label} onClick={() => setMenuOpen(false)} style={{
+              display: 'block', width: '100%', textAlign: 'left',
+              padding: '14px 24px', background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'Ronzino, sans-serif', fontSize: 15, letterSpacing: '0.04em',
+              fontWeight: item.active ? 500 : 400,
+              color: item.active
+                ? (navDark ? '#1a1208' : '#f5e6c8')
+                : (navDark ? 'rgba(107,90,66,0.75)' : 'rgba(220,205,175,0.75)'),
+            }}>
+              {item.label}
+            </button>
+          ))}
+          <div style={{
+            margin: '4px 24px 0',
+            borderTop: navDark ? '1px solid #f0ebe2' : '1px solid rgba(200,169,110,0.10)',
+            paddingTop: 12,
+          }}>
+            <span style={{
+              fontFamily: 'Ronzino, sans-serif', fontSize: 15, letterSpacing: '0.04em',
+              color: navDark ? 'rgba(160,144,128,0.45)' : 'rgba(200,185,154,0.42)',
+            }}>
+              My Collection
+              <span style={{
+                marginLeft: 8, fontSize: 8, fontFamily: 'monospace',
+                textTransform: 'uppercase', letterSpacing: '0.12em',
+                color: navDark ? 'rgba(160,144,128,0.35)' : 'rgba(200,185,154,0.30)',
+                verticalAlign: 'middle',
+              }}>soon</span>
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       <HeroSection whiskies={whiskies} onRegionSelect={handleGlobeSelect} />
