@@ -1,5 +1,4 @@
 [build]
-  base = "whisky-search"
   command = "pnpm build"
   publish = "dist"
 
