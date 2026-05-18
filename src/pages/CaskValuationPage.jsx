@@ -57,7 +57,6 @@ export default function CaskValuationPage() {
 
       <section style={{ background: C.bg, minHeight: 'calc(100vh - 60px)' }}>
         <div style={{
-          maxWidth: 960, margin: '0 auto',
           padding: isMobile ? '40px 24px 80px' : '56px 48px 100px',
         }}>
           <div style={{
