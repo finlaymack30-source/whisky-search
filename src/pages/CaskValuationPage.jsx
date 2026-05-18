@@ -5,7 +5,6 @@ import CaskValuator from '../components/CaskValuator'
 
 const SANS  = "'DM Sans', 'Libre Franklin', system-ui, sans-serif"
 const MONO  = "'DM Mono', 'IBM Plex Mono', 'Roboto Mono', monospace"
-const SERIF = "'Cormorant Garamond', 'Playfair Display', Georgia, serif"
 
 const C = {
   bg: '#FAFAF7',
@@ -55,9 +54,10 @@ export default function CaskValuationPage() {
         <script type="application/ld+json">{JSON_LD}</script>
       </Helmet>
 
-      <section style={{ background: C.bg, minHeight: 'calc(100vh - 60px)' }}>
+      <section style={{ background: C.bg, minHeight: 'calc(100vh - 92px)' }}>
         <div style={{
           padding: isMobile ? '40px 24px 80px' : '56px 48px 100px',
+          height: '100%',
         }}>
           <div style={{
             display: 'grid',
@@ -132,29 +132,6 @@ export default function CaskValuationPage() {
             )}
           </div>
 
-          {!caskHasResult && (
-            <div style={{
-              marginTop: 64,
-              borderTop: `1px solid ${C.border}`,
-              borderBottom: `1px solid ${C.border}`,
-              padding: '26px 0',
-              textAlign: 'center',
-            }}>
-              <div style={{
-                fontFamily: SERIF,
-                fontSize: isMobile ? 17 : 20,
-                fontWeight: 400,
-                fontStyle: 'italic',
-                color: 'rgba(74,69,64,0.40)',
-                lineHeight: 1.6,
-                maxWidth: 600,
-                margin: '0 auto',
-              }}>
-                The cask market has not functioned normally since Q3 2023.<br />
-                This year, the average lot listed at auction has failed to sell.
-              </div>
-            </div>
-          )}
         </div>
       </section>
     </Layout>
