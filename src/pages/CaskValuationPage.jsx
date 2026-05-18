@@ -54,16 +54,19 @@ export default function CaskValuationPage() {
         <script type="application/ld+json">{JSON_LD}</script>
       </Helmet>
 
-      <section style={{ background: C.bg, minHeight: 'calc(100vh - 92px)' }}>
+      <section style={{ background: C.bg, minHeight: 'calc(100vh - 92px)', display: 'flex', flexDirection: 'column' }}>
         <div style={{
           padding: isMobile ? '40px 24px 80px' : '56px 48px 100px',
-          height: '100%',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
         }}>
           <div style={{
             display: 'grid',
             gridTemplateColumns: (caskHasResult || isMobile) ? '1fr' : '11fr 9fr',
             gap: (caskHasResult || isMobile) ? 0 : 52,
             alignItems: 'start',
+            flex: 1,
           }}>
             <div>
               <h1 style={{
