@@ -29,11 +29,13 @@ const CHART_DATA = [
   { year: '2026', failRate: 98, ytd: true },
 ]
 
+const TERRACOTTA = '#8B3A2A'
+
 const CLEARANCE_STATS = [
-  { year: '2023', rate: '100%', note: '100% clearance' },
-  { year: '2024', rate: '34%',  note: 'Market turns'   },
-  { year: '2025', rate: '5.6%', note: 'Near-collapse'  },
-  { year: '2026', rate: '2.1%', note: 'YTD — Critical', highlight: true },
+  { year: '2023', rate: '100%', note: '100% clearance', badge: 'Functioning',   badgeBg: '#D6EDD8', badgeColor: '#2D6A4F' },
+  { year: '2024', rate: '34%',  note: 'Market turns',   badge: 'Deteriorating', badgeBg: '#FAEAC8', badgeColor: '#8A5A00' },
+  { year: '2025', rate: '5.6%', note: 'Near-collapse',  badge: 'Near-collapse', badgeBg: '#FBDFC8', badgeColor: '#A03010' },
+  { year: '2026', rate: '2.1%', note: 'YTD — Critical', badge: 'Critical',      badgeBg: '#EDD8D4', badgeColor: TERRACOTTA, highlight: true },
 ]
 
 const WATCHLIST = [
@@ -164,59 +166,109 @@ export default function MarketReportPage() {
           <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 24, marginBottom: 20 }}>
             <span style={{
               fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em',
-              textTransform: 'uppercase', color: C.muted,
+              textTransform: 'uppercase', color: TERRACOTTA,
             }}>
               Whisky Cask Market Health Index — Updated May 2026
             </span>
           </div>
 
-          <h1 style={{
-            fontFamily: DISPLAY,
-            fontSize: isMobile ? 47 : 72,
-            fontWeight: 500, lineHeight: 1.05,
-            color: C.dark, letterSpacing: '-0.01em',
-            marginBottom: 48, hyphens: 'none',
-            maxWidth: 820,
-          }}>
-            95% of whisky cask auctions<br />failed to clear in 2026
-          </h1>
+          <div style={{ borderLeft: `3px solid ${TERRACOTTA}`, paddingLeft: isMobile ? 16 : 24, marginBottom: 48 }}>
+            <h1 style={{
+              fontFamily: DISPLAY,
+              fontSize: isMobile ? 38 : 56,
+              fontWeight: 500, lineHeight: 1.08,
+              color: C.dark, letterSpacing: '-0.01em',
+              hyphens: 'none', maxWidth: 720, margin: 0,
+            }}>
+              95% of whisky cask auctions<br />failed to clear in 2026
+            </h1>
+          </div>
 
           {/* Clearance rate stat row */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)',
-            borderTop: `1px solid ${C.border}`,
-            borderBottom: `1px solid ${C.border}`,
+            gap: 1,
+            background: C.border,
             marginBottom: 0,
           }}>
-            {CLEARANCE_STATS.map((s, i) => (
+            {CLEARANCE_STATS.map((s) => (
               <div key={s.year} style={{
-                padding: isMobile ? '20px 0' : '24px 0',
-                paddingRight: isMobile ? 16 : 0,
-                paddingLeft: i === 0 ? 0 : (isMobile ? 16 : 32),
-                borderLeft: i === 0 ? 'none' : `1px solid ${C.border}`,
-                borderTop: (isMobile && i >= 2) ? `1px solid ${C.border}` : 'none',
+                padding: isMobile ? '20px 16px' : '24px 20px',
+                background: s.highlight ? '#EDE8DF' : '#F5F2EC',
               }}>
                 <Label>{s.year} clearance</Label>
                 <div style={{
                   fontFamily: MONO,
                   fontSize: isMobile ? 32 : 44,
                   fontWeight: 400,
-                  color: s.highlight ? '#724230' : C.dark,
+                  color: s.highlight ? TERRACOTTA : C.dark,
                   lineHeight: 1,
                   letterSpacing: 0,
-                  marginBottom: 6,
+                  marginBottom: 8,
                 }}>
                   {s.rate}
                 </div>
-                <div style={{
-                  fontSize: 11, fontFamily: SANS, fontWeight: 300,
-                  color: C.muted, lineHeight: 1.45,
-                }}>
-                  {s.note}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{
+                    fontSize: 11, fontFamily: SANS, fontWeight: 300,
+                    color: C.muted, lineHeight: 1.45,
+                  }}>
+                    {s.note}
+                  </span>
+                  <span style={{
+                    fontSize: 9, fontFamily: SANS,
+                    letterSpacing: '0.12em', textTransform: 'uppercase',
+                    background: s.badgeBg, color: s.badgeColor,
+                    padding: '2px 6px', borderRadius: 2,
+                    whiteSpace: 'nowrap', flexShrink: 0,
+                  }}>
+                    {s.badge}
+                  </span>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Editorial two-column context block */}
+          <div style={{
+            borderTop: `1px solid ${C.border}`,
+            paddingTop: 28, paddingBottom: 40,
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+            gap: isMobile ? 28 : 52,
+          }}>
+            <div>
+              <div style={{
+                fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase',
+                fontFamily: SANS, color: TERRACOTTA, marginBottom: 12,
+              }}>
+                What this means
+              </div>
+              <p style={{ fontSize: 13, fontFamily: SANS, color: C.ink, lineHeight: 1.8, margin: 0 }}>
+                The cask market has not functioned as a liquid asset class since Q3 2023. What began as a demand contraction has become structural: the buyer pool that drove 2020–2023 prices has not returned, and current reserve levels reflect expectations set in a different market entirely.
+              </p>
+            </div>
+            <div>
+              <div style={{
+                fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase',
+                fontFamily: SANS, color: TERRACOTTA, marginBottom: 12,
+              }}>
+                Key data points
+              </div>
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[
+                  ['Average bid–ask gap', '30%'],
+                  ['Months since normal function', '33'],
+                  ['Distilleries with zero clearance this year', '14'],
+                ].map(([label, val]) => (
+                  <li key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: `1px solid ${C.border}`, paddingBottom: 10 }}>
+                    <span style={{ fontSize: 12, fontFamily: SANS, color: C.muted }}>{label}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 400, color: C.dark, flexShrink: 0, marginLeft: 16 }}>{val}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
