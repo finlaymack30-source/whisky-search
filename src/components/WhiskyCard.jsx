@@ -12,7 +12,23 @@ function BottlePlaceholder() {
 }
 
 const buyHref = (w) =>
-  w.buy_url || `https://www.thewhiskyexchange.com/search#q=${encodeURIComponent(w.title)}`
+  w.twe_url || w.buy_url || `https://www.thewhiskyexchange.com/search#q=${encodeURIComponent(w.title)}`
+
+function TrendArrow({ trend }) {
+  if (!trend || trend === 'stable') return null
+  const up = trend === 'up'
+  return (
+    <svg width="10" height="12" viewBox="0 0 10 12" fill="none" style={{ marginLeft: 3, flexShrink: 0 }}>
+      <path
+        d={up ? 'M5 10 L5 2 M2 5 L5 2 L8 5' : 'M5 2 L5 10 M2 7 L5 10 L8 7'}
+        stroke={up ? '#4e9e6e' : '#c0534e'}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 
 function WhiskyCard({ whisky, saved, onSave, view }) {
   const [hovered, setHovered] = useState(false)
@@ -71,7 +87,17 @@ function WhiskyCard({ whisky, saved, onSave, view }) {
             {saved ? '★' : '☆'}
           </button>
           <div style={{ textAlign: 'right' }}>
-            {whisky.price_gbp && <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1208' }}>£{whisky.price_gbp}</div>}
+            {whisky.price_gbp && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: '#1a1208' }}>£{whisky.price_gbp}</span>
+                  <TrendArrow trend={whisky.price_trend} />
+                </div>
+                {whisky.price_shop_count && (
+                  <div style={{ fontSize: 10, color: '#b0a090', marginTop: 1 }}>{whisky.price_shop_count} shops</div>
+                )}
+              </>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end', marginTop: 3 }}>
               <span style={{ fontSize: 11, color: '#c8a96e' }}>★</span>
               <span style={{ fontSize: 12, fontWeight: 500, color: '#1a1208' }}>{whisky.score}</span>
@@ -157,7 +183,14 @@ function WhiskyCard({ whisky, saved, onSave, view }) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           {whisky.price_gbp
-            ? <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1208' }}>£{whisky.price_gbp}</span>
+            ? <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 13, fontWeight: 500, color: '#1a1208' }}>
+                  £{whisky.price_gbp}<TrendArrow trend={whisky.price_trend} />
+                </span>
+                {whisky.price_shop_count && (
+                  <span style={{ fontSize: 9, color: '#b0a090', letterSpacing: '0.03em' }}>{whisky.price_shop_count} shops</span>
+                )}
+              </span>
             : <span />
           }
           <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
