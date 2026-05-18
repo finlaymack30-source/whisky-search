@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import Layout from '../components/Layout'
 
-const SANS = "'DM Sans', 'Libre Franklin', system-ui, sans-serif"
+const SANS  = "'DM Sans', 'Libre Franklin', system-ui, sans-serif"
+const MONO  = "'DM Mono', 'IBM Plex Mono', 'Roboto Mono', monospace"
+const SERIF = "'Cormorant Garamond', 'Playfair Display', Georgia, serif"
+const DISPLAY = "'Freight Display Pro', 'Freight Display', Canela, Georgia, serif"
 
 const C = {
   bg: '#FAFAF7',
@@ -14,29 +17,23 @@ const C = {
   border: '#E8E4DC',
   borderMid: '#D8D2C8',
   terracotta: '#7A3328',
-  amber: '#b8882a',
-  navy: '#0f0a04',
-  redBg: '#fef2f2',
-  redBorder: '#fecaca',
-  greenBg: '#f0fdf4',
-  greenBorder: '#bbf7d0',
 }
 
 const CHART_DATA = [
   { year: '2020', failRate: 48 },
-  { year: '2021', failRate: 0 },
-  { year: '2022', failRate: 0 },
-  { year: '2023', failRate: 0 },
+  { year: '2021', failRate: 5  },
+  { year: '2022', failRate: 7  },
+  { year: '2023', failRate: 3  },
   { year: '2024', failRate: 66 },
   { year: '2025', failRate: 94 },
   { year: '2026', failRate: 98, ytd: true },
 ]
 
 const CLEARANCE_STATS = [
-  { year: '2023', rate: '100%', note: '100% clearance', rateColor: '#4ade80' },
-  { year: '2024', rate: '34%',  note: 'Market turns',   rateColor: '#fb923c' },
-  { year: '2025', rate: '5.6%', note: 'Near-collapse',  rateColor: '#ef4444' },
-  { year: '2026', rate: '2.1%', note: 'YTD — Critical', rateColor: '#ef4444' },
+  { year: '2023', rate: '100%', note: '100% clearance' },
+  { year: '2024', rate: '34%',  note: 'Market turns'   },
+  { year: '2025', rate: '5.6%', note: 'Near-collapse'  },
+  { year: '2026', rate: '2.1%', note: 'YTD — Critical', highlight: true },
 ]
 
 const WATCHLIST = [
@@ -72,6 +69,17 @@ const SEO_SECTIONS = [
 const TITLE       = 'Whisky Cask Market Report — The Bottle Keep'
 const DESCRIPTION = 'Monthly intelligence on the whisky cask market. Clearance rates, bid-ask spreads, and distillery liquidity data updated from live auction results.'
 
+function Label({ children }) {
+  return (
+    <div style={{
+      fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase',
+      fontFamily: SANS, color: C.stone, fontWeight: 400, marginBottom: 10,
+    }}>
+      {children}
+    </div>
+  )
+}
+
 function BarChart({ data, isMobile }) {
   const vbW    = 640
   const chartH = 260
@@ -90,48 +98,40 @@ function BarChart({ data, isMobile }) {
         const y = padT + innerH * (1 - t / 100)
         return (
           <g key={t}>
-            <line x1={padL} y1={y} x2={padL + innerW} y2={y} stroke="#ede5d8" strokeWidth="1" />
-            <text x={padL - 7} y={y + 4} fontSize="10" fill="#a09080" textAnchor="end" fontFamily="monospace">{t}%</text>
+            <line x1={padL} y1={y} x2={padL + innerW} y2={y} stroke={C.border} strokeWidth="1" />
+            <text x={padL - 7} y={y + 4} fontSize="10" fill={C.muted} textAnchor="end" fontFamily={MONO}>{t}%</text>
           </g>
         )
       })}
-      <line x1={padL} y1={padT} x2={padL} y2={padT + innerH} stroke="#ede5d8" strokeWidth="1" />
+      <line x1={padL} y1={padT} x2={padL} y2={padT + innerH} stroke={C.border} strokeWidth="1" />
       {data.map((d, i) => {
         const x     = padL + gap * i + (gap - barW) / 2
         const barH  = Math.max(innerH * d.failRate / 100, d.failRate > 0 ? 2 : 0)
         const y     = padT + innerH - barH
-        const color = d.failRate >= 90 ? '#c0392b' : d.failRate >= 50 ? '#d35400' : '#2d6a4f'
+        const color = d.failRate >= 90 ? C.terracotta : d.failRate >= 50 ? '#9A6030' : C.stone
         return (
           <g key={d.year}>
-            <rect x={x} y={y} width={barW} height={barH} fill={color} opacity="0.9" rx="1" />
+            <rect x={x} y={y} width={barW} height={barH} fill={color} opacity={d.failRate >= 90 ? 0.9 : 0.7} rx="1" />
             {d.failRate > 8 && (
-              <text x={x + barW / 2} y={y - 6} fontSize="10" fill={color} textAnchor="middle" fontWeight="700" fontFamily="monospace">
+              <text x={x + barW / 2} y={y - 6} fontSize="10" fill={color} textAnchor="middle" fontWeight="500" fontFamily={MONO}>
                 {d.failRate}%
               </text>
             )}
-            <text x={x + barW / 2} y={chartH - padB + 16} fontSize="11" fill={d.ytd ? C.amber : '#6b5a42'} textAnchor="middle" fontFamily="Ronzino, sans-serif">
+            <text x={x + barW / 2} y={chartH - padB + 16} fontSize="11" fill={d.ytd ? C.terracotta : C.ink} textAnchor="middle" fontFamily={SANS}>
               {d.year}{d.ytd ? '*' : ''}
             </text>
           </g>
         )
       })}
-      <text x={vbW - padR} y={chartH - 1} fontSize="9" fill="#a09080" textAnchor="end" fontFamily="monospace">*2026 YTD (Jan–Apr)</text>
+      <text x={vbW - padR} y={chartH - 1} fontSize="9" fill={C.muted} textAnchor="end" fontFamily={MONO}>*2026 YTD (Jan–Apr)</text>
     </svg>
   )
 }
 
-function MrLabel({ children }) {
-  return (
-    <div style={{ fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.muted, fontFamily: 'monospace', marginBottom: 10 }}>
-      {children}
-    </div>
-  )
-}
-
 export default function MarketReportPage() {
-  const [isMobile, setIsMobile]     = useState(() => window.innerWidth < 768)
-  const [email, setEmail]           = useState('')
-  const [submitted, setSubmitted]   = useState(false)
+  const [isMobile, setIsMobile]   = useState(() => window.innerWidth < 768)
+  const [email, setEmail]         = useState('')
+  const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768)
@@ -139,8 +139,8 @@ export default function MarketReportPage() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  const sPad    = isMobile ? '64px 20px' : '80px 48px'
-  const innerMax = { maxWidth: 780, margin: '0 auto' }
+  const sectionPad = isMobile ? '56px 24px' : '72px 48px'
+  const innerMax   = { maxWidth: 780, margin: '0 auto' }
 
   return (
     <Layout>
@@ -155,160 +155,289 @@ export default function MarketReportPage() {
         <meta name="twitter:description" content={DESCRIPTION} />
       </Helmet>
 
-      {/* Hero */}
-      <section style={{ background: C.navy, padding: isMobile ? '64px 20px 56px' : '96px 48px 80px' }}>
-        <div style={innerMax}>
-          <div style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'monospace', color: C.amber, marginBottom: 24 }}>
-            The Whisky Cask Market Health Index — Updated May 2026
+      {/* ── Hero ──────────────────────────────────────────────────────────────── */}
+      <section style={{ background: C.bg }}>
+        <div style={{
+          maxWidth: 960, margin: '0 auto',
+          padding: isMobile ? '40px 24px 0' : '56px 48px 0',
+        }}>
+          <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 24, marginBottom: 20 }}>
+            <span style={{
+              fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em',
+              textTransform: 'uppercase', color: C.muted,
+            }}>
+              Whisky Cask Market Health Index — Updated May 2026
+            </span>
           </div>
-          <h1 style={{ fontSize: isMobile ? 30 : 52, fontWeight: 700, lineHeight: 1.06, color: '#fff', letterSpacing: '-0.015em', marginBottom: 22 }}>
-            95% of whisky cask auctions failed to clear in 2026
+
+          <h1 style={{
+            fontFamily: DISPLAY,
+            fontSize: isMobile ? 47 : 72,
+            fontWeight: 500, lineHeight: 1.05,
+            color: C.dark, letterSpacing: '-0.01em',
+            marginBottom: 48, hyphens: 'none',
+            maxWidth: 820,
+          }}>
+            95% of whisky cask auctions<br />failed to clear in 2026
           </h1>
-          <p style={{ fontSize: isMobile ? 15 : 17, color: 'rgba(255,255,255,0.6)', lineHeight: 1.68, maxWidth: 620, marginBottom: 52 }}>
-            Analysis of all cask auctions at Grand Whisky Auction since 2020 shows the market has shifted from functioning price discovery to persistent reserve failure.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: isMobile ? 10 : 16 }}>
-            {CLEARANCE_STATS.map(s => (
-              <div key={s.year} style={{ padding: isMobile ? '18px 16px' : '22px 20px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 3 }}>
-                <div style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.32)', fontFamily: 'monospace', marginBottom: 10 }}>{s.year} clearance</div>
-                <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: 700, color: s.rateColor, lineHeight: 1, marginBottom: 8, fontFamily: 'monospace' }}>{s.rate}</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.36)' }}>{s.note}</div>
+
+          {/* Clearance rate stat row */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)',
+            borderTop: `1px solid ${C.border}`,
+            borderBottom: `1px solid ${C.border}`,
+            marginBottom: 0,
+          }}>
+            {CLEARANCE_STATS.map((s, i) => (
+              <div key={s.year} style={{
+                padding: isMobile ? '20px 0' : '24px 0',
+                paddingRight: isMobile ? 16 : 0,
+                paddingLeft: i === 0 ? 0 : (isMobile ? 16 : 32),
+                borderLeft: i === 0 ? 'none' : `1px solid ${C.border}`,
+                borderTop: (isMobile && i >= 2) ? `1px solid ${C.border}` : 'none',
+              }}>
+                <Label>{s.year} clearance</Label>
+                <div style={{
+                  fontFamily: MONO,
+                  fontSize: isMobile ? 32 : 44,
+                  fontWeight: 400,
+                  color: s.highlight ? '#724230' : C.dark,
+                  lineHeight: 1,
+                  letterSpacing: 0,
+                  marginBottom: 6,
+                }}>
+                  {s.rate}
+                </div>
+                <div style={{
+                  fontSize: 11, fontFamily: SANS, fontWeight: 300,
+                  color: C.muted, lineHeight: 1.45,
+                }}>
+                  {s.note}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Chart */}
-      <section style={{ background: C.bg, padding: sPad, borderBottom: `1px solid ${C.border}` }}>
+      {/* ── Reserve Failure Rate chart ─────────────────────────────────────── */}
+      <section style={{ background: C.bg, padding: sectionPad, borderBottom: `1px solid ${C.border}` }}>
         <div style={innerMax}>
-          <MrLabel>Reserve Failure Rate</MrLabel>
-          <h2 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: C.dark, letterSpacing: '-0.01em', marginBottom: 8 }}>2020 – 2026</h2>
-          <p style={{ fontSize: 13, color: C.muted, marginBottom: 32, lineHeight: 1.6 }}>Percentage of cask lots failing to meet reserve at Grand Whisky Auction.</p>
+          <Label>Reserve Failure Rate by Year</Label>
+          <h2 style={{
+            fontFamily: SERIF,
+            fontSize: isMobile ? 28 : 38,
+            fontWeight: 400, lineHeight: 1.1,
+            color: C.dark, letterSpacing: '-0.01em',
+            marginBottom: 8,
+          }}>
+            2020 – 2026
+          </h2>
+          <p style={{ fontSize: 13, fontFamily: SANS, color: C.muted, marginBottom: 36, lineHeight: 1.6 }}>
+            Percentage of cask lots failing to meet reserve at Grand Whisky Auction.
+          </p>
           <BarChart data={CHART_DATA} isMobile={isMobile} />
-          <div style={{ marginTop: 28, padding: '16px 20px', background: C.redBg, border: `1px solid ${C.redBorder}`, borderRadius: 3 }}>
-            <span style={{ fontSize: 12, color: '#991b1b', lineHeight: 1.6 }}>
+          <div style={{
+            marginTop: 28, padding: '16px 20px',
+            borderLeft: `2px solid ${C.terracotta}`,
+            background: C.white,
+            border: `1px solid ${C.border}`,
+            borderLeftWidth: 2, borderLeftColor: C.terracotta,
+          }}>
+            <span style={{ fontSize: 12, fontFamily: SANS, color: C.ink, lineHeight: 1.65 }}>
               <strong>Signal lead:</strong> Reserve failure rates began rising in 2024 — approximately 5 months before secondary market price declines became visible in bottled whisky data.
             </span>
           </div>
         </div>
       </section>
 
-      {/* Market Status */}
-      <section style={{ background: C.bg, padding: sPad, borderBottom: `1px solid ${C.border}` }}>
+      {/* ── Market Status ─────────────────────────────────────────────────── */}
+      <section style={{ background: C.bg, padding: sectionPad, borderBottom: `1px solid ${C.border}` }}>
         <div style={innerMax}>
-          <MrLabel>Market Status</MrLabel>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 14, marginBottom: 40 }}>
+          <Label>Current Market Status</Label>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)',
+            borderTop: `1px solid ${C.border}`,
+            borderBottom: `1px solid ${C.border}`,
+            marginBottom: 32,
+          }}>
             {[
-              { label: 'Market Health',        value: 'CRITICAL', valueColor: '#c0392b', bg: C.redBg,  border: C.redBorder },
-              { label: 'Reserve Failure Rate', value: '97.9%',    valueColor: '#c0392b', bg: C.redBg,  border: C.redBorder },
-              { label: 'Last Updated',         value: 'May 2026', valueColor: C.dark,    bg: C.white,  border: C.borderMid },
-            ].map(item => (
-              <div key={item.label} style={{ padding: '20px 22px', background: item.bg, border: `1px solid ${item.border}`, borderRadius: 3 }}>
-                <MrLabel>{item.label}</MrLabel>
-                <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 700, color: item.valueColor, fontFamily: 'monospace', letterSpacing: '-0.01em' }}>{item.value}</div>
+              { label: 'Market Health',        value: 'Critical', color: '#724230' },
+              { label: 'Reserve Failure Rate', value: '97.9%',    color: '#724230' },
+              { label: 'Last Updated',         value: 'May 2026', color: C.dark    },
+            ].map((item, i) => (
+              <div key={item.label} style={{
+                padding: isMobile ? '20px 0' : '24px 0',
+                paddingLeft: i === 0 ? 0 : (isMobile ? 16 : 32),
+                borderLeft: i === 0 ? 'none' : `1px solid ${C.border}`,
+                borderTop: (isMobile && i >= 2) ? `1px solid ${C.border}` : 'none',
+              }}>
+                <Label>{item.label}</Label>
+                <div style={{
+                  fontFamily: MONO,
+                  fontSize: isMobile ? 28 : 44,
+                  fontWeight: 400,
+                  color: item.color, lineHeight: 1, letterSpacing: 0,
+                }}>
+                  {item.value}
+                </div>
               </div>
             ))}
           </div>
-          <div style={{ padding: '20px 24px', background: C.white, border: `1px solid ${C.borderMid}`, borderRadius: 3, borderLeft: `3px solid ${C.amber}` }}>
-            <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.amber, fontFamily: 'monospace', marginBottom: 8 }}>Leading Indicator</div>
-            <p style={{ fontSize: 13, color: C.dark, lineHeight: 1.65 }}>
+          <div style={{
+            padding: '18px 24px',
+            background: C.white,
+            border: `1px solid ${C.border}`,
+            borderLeftWidth: 2, borderLeftColor: C.stone,
+          }}>
+            <Label>Leading Indicator</Label>
+            <p style={{ fontSize: 13, fontFamily: SANS, color: C.dark, lineHeight: 1.65, margin: 0 }}>
               Cask reserve failure rates lead bottled whisky price declines by approximately <strong>5 months</strong>. The failure rate crossed 66% in 2024 — a threshold now reflected in softening secondary market valuations for rare bottles.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Distillery Watchlist */}
-      <section style={{ background: C.white, padding: sPad, borderBottom: `1px solid ${C.border}` }}>
+      {/* ── Distillery Watchlist ───────────────────────────────────────────── */}
+      <section style={{ background: C.bg, padding: sectionPad, borderBottom: `1px solid ${C.border}` }}>
         <div style={innerMax}>
-          <MrLabel>Distillery Watchlist</MrLabel>
-          <h2 style={{ fontSize: isMobile ? 20 : 26, fontWeight: 700, color: C.dark, letterSpacing: '-0.01em', marginBottom: 8 }}>Liquidity by distillery</h2>
-          <p style={{ fontSize: 13, color: C.muted, marginBottom: 28, lineHeight: 1.6 }}>Cask market liquidity signals by distillery. Updated monthly.</p>
-          <div style={{ border: `1px solid ${C.borderMid}`, borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px', padding: '10px 20px', background: C.bg, borderBottom: `1px solid ${C.borderMid}` }}>
+          <Label>Distillery Watchlist</Label>
+          <h2 style={{
+            fontFamily: SERIF,
+            fontSize: isMobile ? 28 : 38,
+            fontWeight: 400, lineHeight: 1.1,
+            color: C.dark, letterSpacing: '-0.01em',
+            marginBottom: 8,
+          }}>
+            Liquidity by distillery
+          </h2>
+          <p style={{ fontSize: 13, fontFamily: SANS, color: C.muted, marginBottom: 28, lineHeight: 1.6 }}>
+            Cask market liquidity signals by distillery. Updated monthly.
+          </p>
+          <div style={{ border: `1px solid ${C.border}`, overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px', padding: '10px 20px', background: C.white, borderBottom: `1px solid ${C.border}` }}>
               {['Distillery', 'Liquidity', 'Status'].map(h => (
-                <div key={h} style={{ fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.muted, fontFamily: 'monospace' }}>{h}</div>
+                <div key={h} style={{ fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.stone, fontFamily: SANS }}>{h}</div>
               ))}
             </div>
             {WATCHLIST.map((row, i) => (
-              <div key={row.distillery} style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px', padding: '16px 20px', alignItems: 'center', borderBottom: i < WATCHLIST.length - 1 ? `1px solid ${C.border}` : 'none', background: C.white }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: C.dark }}>{row.distillery}</div>
-                <div style={{ fontSize: 12, color: row.liqColor }}>{row.liquidity}</div>
+              <div key={row.distillery} style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px', padding: '16px 20px', alignItems: 'center', borderBottom: i < WATCHLIST.length - 1 ? `1px solid ${C.border}` : 'none', background: C.bg }}>
+                <div style={{ fontSize: 13, fontFamily: SANS, fontWeight: 400, color: C.dark }}>{row.distillery}</div>
+                <div style={{ fontSize: 12, fontFamily: MONO, fontWeight: 400, color: row.liqColor }}>{row.liquidity}</div>
                 <div>
-                  <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'monospace', background: row.statusBg, color: row.statusColor, padding: '3px 8px', borderRadius: 2 }}>{row.status}</span>
+                  <span style={{ fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: SANS, background: row.statusBg, color: row.statusColor, padding: '3px 8px' }}>{row.status}</span>
                 </div>
               </div>
             ))}
-            <div style={{ padding: '14px 20px', background: C.bg, borderTop: `1px solid ${C.border}` }}>
-              <span style={{ fontSize: 11, color: C.muted, fontStyle: 'italic' }}>Full watchlist available to subscribers — updated monthly with GWA data</span>
+            <div style={{ padding: '14px 20px', background: C.white, borderTop: `1px solid ${C.border}` }}>
+              <span style={{ fontSize: 11, fontFamily: SANS, color: C.muted, fontStyle: 'italic' }}>Full watchlist available to subscribers — updated monthly with GWA data</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Email Capture */}
-      <section style={{ background: C.navy, padding: isMobile ? '72px 20px' : '96px 48px' }}>
+      {/* ── Email Capture ─────────────────────────────────────────────────── */}
+      <section style={{ background: C.white, padding: isMobile ? '64px 24px' : '80px 48px', borderBottom: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.amber, fontFamily: 'monospace', marginBottom: 20 }}>Free monthly briefing</div>
-          <h2 style={{ fontSize: isMobile ? 24 : 34, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em', marginBottom: 14 }}>Get monthly whisky market intelligence</h2>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.52)', lineHeight: 1.68, marginBottom: 10 }}>Auction liquidity, clearance rates, cask market health.</p>
-          <div style={{ fontSize: 11, color: C.amber, fontFamily: 'monospace', letterSpacing: '0.06em', marginBottom: 36 }}>Next issue: Whisky Market Pulse – May 2026</div>
+          <Label>Free monthly briefing</Label>
+          <h2 style={{
+            fontFamily: DISPLAY,
+            fontSize: isMobile ? 36 : 52,
+            fontWeight: 500, lineHeight: 1.05,
+            color: C.dark, letterSpacing: '-0.01em',
+            marginBottom: 16,
+          }}>
+            Whisky market<br />intelligence, monthly
+          </h2>
+          <p style={{ fontSize: 14, fontFamily: SANS, color: C.muted, lineHeight: 1.68, marginBottom: 10 }}>
+            Auction liquidity, clearance rates, cask market health.
+          </p>
+          <div style={{ fontSize: 10, fontFamily: MONO, color: C.stone, letterSpacing: '0.08em', marginBottom: 36 }}>
+            Next issue: Whisky Market Pulse — May 2026
+          </div>
           {submitted ? (
-            <div style={{ padding: '22px 24px', background: 'rgba(74,222,128,0.07)', border: '1px solid rgba(74,222,128,0.18)', borderRadius: 3 }}>
-              <div style={{ fontSize: 15, color: '#4ade80', fontWeight: 500 }}>You're on the list.</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>We'll send the May issue as soon as it's ready.</div>
+            <div style={{ padding: '22px 24px', background: C.bg, border: `1px solid ${C.border}` }}>
+              <div style={{ fontSize: 15, fontFamily: SANS, color: C.dark, fontWeight: 500 }}>You're on the list.</div>
+              <div style={{ fontSize: 12, fontFamily: SANS, color: C.muted, marginTop: 6 }}>We'll send the May issue as soon as it's ready.</div>
             </div>
           ) : (
             <form onSubmit={e => { e.preventDefault(); if (email.trim()) setSubmitted(true) }} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10 }}>
-              <input type="email" placeholder="your@email.com" value={email} required onChange={e => setEmail(e.target.value)} style={{ flex: 1, padding: '13px 16px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 3, fontSize: 14, color: '#fff', fontFamily: 'Ronzino, sans-serif', outline: 'none' }} />
-              <button type="submit" style={{ padding: '13px 28px', background: C.amber, color: '#fff', border: 'none', borderRadius: 3, fontSize: 13, fontFamily: 'Ronzino, sans-serif', fontWeight: 500, cursor: 'pointer', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>Join free</button>
+              <input
+                type="email" placeholder="your@email.com" value={email} required
+                onChange={e => setEmail(e.target.value)}
+                style={{ flex: 1, padding: '13px 16px', background: C.bg, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: SANS, color: C.dark, outline: 'none' }}
+              />
+              <button type="submit" style={{ padding: '13px 28px', background: C.dark, color: C.bg, border: 'none', fontSize: 10, fontFamily: SANS, fontWeight: 400, letterSpacing: '0.16em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                Join free
+              </button>
             </form>
           )}
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)', marginTop: 18 }}>No spam. Unsubscribe anytime.</p>
+          <p style={{ fontSize: 11, fontFamily: SANS, color: C.muted, marginTop: 18 }}>No spam. Unsubscribe anytime.</p>
         </div>
       </section>
 
-      {/* Affiliate Block */}
-      <section style={{ background: C.white, padding: sPad, borderBottom: `1px solid ${C.border}` }}>
+      {/* ── Affiliate Block ───────────────────────────────────────────────── */}
+      <section style={{ background: C.bg, padding: sectionPad, borderBottom: `1px solid ${C.border}` }}>
         <div style={innerMax}>
-          <MrLabel>Tools we use</MrLabel>
-          <h2 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: C.dark, letterSpacing: '-0.01em', marginBottom: 8 }}>Resources for cask investors and collectors</h2>
-          <p style={{ fontSize: 13, color: C.muted, marginBottom: 28, lineHeight: 1.6 }}>Services we use and recommend. Some links earn a small commission — this never affects our analysis.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: 12 }}>
+          <Label>Tools we use</Label>
+          <h2 style={{
+            fontFamily: SERIF,
+            fontSize: isMobile ? 28 : 38,
+            fontWeight: 400, lineHeight: 1.1,
+            color: C.dark, letterSpacing: '-0.01em',
+            marginBottom: 8,
+          }}>
+            Resources for cask investors and collectors
+          </h2>
+          <p style={{ fontSize: 13, fontFamily: SANS, color: C.muted, marginBottom: 28, lineHeight: 1.6 }}>
+            Services we use and recommend. Some links earn a small commission — this never affects our analysis.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: 1, border: `1px solid ${C.border}` }}>
             {AFFILIATE_ITEMS.map(item => (
-              <div key={item.category} style={{ padding: '18px 18px', background: C.bg, border: `1px solid ${C.borderMid}`, borderRadius: 3 }}>
-                <div style={{ fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.muted, fontFamily: 'monospace', marginBottom: 6 }}>{item.category}</div>
-                <div style={{ fontSize: 12, color: C.dark, marginBottom: 10 }}>{item.description}</div>
-                <div style={{ fontSize: 9, color: C.muted, fontFamily: 'monospace', letterSpacing: '0.06em', fontStyle: 'italic' }}>Links coming soon</div>
+              <div key={item.category} style={{ padding: '20px 20px', background: C.white, borderBottom: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: SANS, color: C.stone, marginBottom: 8 }}>{item.category}</div>
+                <div style={{ fontSize: 13, fontFamily: SANS, color: C.dark, marginBottom: 10, lineHeight: 1.4 }}>{item.description}</div>
+                <div style={{ fontSize: 9, fontFamily: MONO, color: C.muted, letterSpacing: '0.06em', fontStyle: 'italic' }}>Coming soon</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* SEO */}
-      <section style={{ background: C.bg, padding: sPad, borderBottom: `1px solid ${C.border}` }}>
+      {/* ── SEO ───────────────────────────────────────────────────────────── */}
+      <section style={{ background: C.bg, padding: sectionPad, borderBottom: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <MrLabel>Market Context</MrLabel>
-          <h2 style={{ fontSize: isMobile ? 20 : 26, fontWeight: 700, color: C.dark, letterSpacing: '-0.01em', marginBottom: 28 }}>Is the whisky cask investment market broken?</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Label>Market Context</Label>
+          <h2 style={{
+            fontFamily: SERIF,
+            fontSize: isMobile ? 28 : 38,
+            fontWeight: 400, lineHeight: 1.1,
+            color: C.dark, letterSpacing: '-0.01em',
+            marginBottom: 32,
+          }}>
+            Is the whisky cask investment market broken?
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {SEO_SECTIONS.map((s, i) => (
-              <div key={i} style={{ padding: '24px 24px', background: C.white, border: `1px solid ${C.borderMid}`, borderRadius: 3 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 600, color: C.dark, marginBottom: 10, lineHeight: 1.35 }}>{s.heading}</h3>
-                <p style={{ fontSize: 13, color: C.ink, lineHeight: 1.75 }}>{s.body}</p>
+              <div key={i} style={{ paddingTop: 24, paddingBottom: 24, borderBottom: `1px solid ${C.border}` }}>
+                <h3 style={{ fontFamily: SERIF, fontSize: isMobile ? 18 : 22, fontWeight: 400, color: C.dark, marginBottom: 10, lineHeight: 1.35 }}>{s.heading}</h3>
+                <p style={{ fontSize: 13, fontFamily: SANS, color: C.ink, lineHeight: 1.75, margin: 0 }}>{s.body}</p>
               </div>
             ))}
           </div>
-          <p style={{ fontSize: 11, color: C.muted, marginTop: 32, lineHeight: 1.65 }}>Data source: Grand Whisky Auction completed lot results, 2020–2026. Analysis by The Bottle Keep. Updated monthly. Not investment advice.</p>
+          <p style={{ fontSize: 11, fontFamily: SANS, color: C.muted, marginTop: 28, lineHeight: 1.65 }}>
+            Data source: Grand Whisky Auction completed lot results, 2020–2026. Analysis by The Bottle Keep. Updated monthly. Not investment advice.
+          </p>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{ background: C.navy, padding: isMobile ? '40px 20px' : '52px 48px' }}>
-        <div style={{ maxWidth: 780, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <span style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', fontWeight: 400 }}>The Bottle Keep</span>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)', textAlign: isMobile ? 'left' : 'right', lineHeight: 1.6 }}>Market data updated monthly.<br />Not investment advice.</p>
+      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      <footer style={{ background: C.bg, padding: isMobile ? '32px 24px' : '40px 48px', borderTop: `1px solid ${C.border}` }}>
+        <div style={{ maxWidth: 780, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <span style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase', color: C.muted, fontWeight: 400 }}>The Bottle Keep</span>
+          <p style={{ fontSize: 11, fontFamily: SANS, color: C.muted, margin: 0, lineHeight: 1.6 }}>Market data updated monthly. Not investment advice.</p>
         </div>
       </footer>
     </Layout>
