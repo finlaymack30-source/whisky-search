@@ -87,11 +87,11 @@ function Ticker({ th }) {
   )
 }
 
-export default function Layout({ children, dark = false, lightTicker = false }) {
+export default function Layout({ children, dark = false }) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
   const location = useLocation()
-  const th       = dark ? THEMES.dark : THEMES.light
-  const tickerTh = (dark && lightTicker) ? THEMES.light : th
+  const th  = dark ? THEMES.dark : THEMES.light
+  const nav = THEMES.light  // navbar always light — consistent brand element
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768)
@@ -107,8 +107,8 @@ export default function Layout({ children, dark = false, lightTicker = false }) 
     display: 'flex', alignItems: 'center',
     fontFamily: SANS, fontSize: 10,
     letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 400,
-    color: active ? th.navActive : th.navInactive,
-    borderBottom: `1px solid ${active ? th.navActiveBorder : 'transparent'}`,
+    color: active ? nav.navActive : nav.navInactive,
+    borderBottom: `1px solid ${active ? nav.navActiveBorder : 'transparent'}`,
     marginBottom: -1,
     transition: 'color 0.15s, border-color 0.15s',
     whiteSpace: 'nowrap',
@@ -119,7 +119,7 @@ export default function Layout({ children, dark = false, lightTicker = false }) 
     <div style={{ fontFamily: SANS, background: th.bg, minHeight: '100vh' }}>
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        background: th.navBg, borderBottom: `1px solid ${th.navBorder}`,
+        background: nav.navBg, borderBottom: `1px solid ${nav.navBorder}`,
         padding: isMobile ? '0 20px' : '0 48px', height: 60,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
@@ -127,7 +127,7 @@ export default function Layout({ children, dark = false, lightTicker = false }) 
           <span style={{
             fontFamily: SANS, fontSize: 11,
             letterSpacing: '0.28em', textTransform: 'uppercase',
-            color: th.wordmark, fontWeight: 400,
+            color: nav.wordmark, fontWeight: 400,
           }}>
             The Bottle Keep
           </span>
@@ -140,13 +140,13 @@ export default function Layout({ children, dark = false, lightTicker = false }) 
             <div style={{
               display: 'flex', alignItems: 'center', gap: 6,
               marginLeft: 24, paddingLeft: 24,
-              borderLeft: `1px solid ${th.navDivider}`,
+              borderLeft: `1px solid ${nav.navDivider}`,
             }}>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: th.navBadge, flexShrink: 0 }} />
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: nav.navBadge, flexShrink: 0 }} />
               <span style={{
                 fontFamily: SANS, fontSize: 8,
                 letterSpacing: '0.2em', textTransform: 'uppercase',
-                color: th.navBadge, fontWeight: 400,
+                color: nav.navBadge, fontWeight: 400,
               }}>
                 Market: Critical
               </span>
@@ -156,7 +156,7 @@ export default function Layout({ children, dark = false, lightTicker = false }) 
       </nav>
 
       <div style={{ paddingTop: 60 }}>
-        <Ticker th={tickerTh} />
+        <Ticker th={th} />
         {children}
       </div>
     </div>

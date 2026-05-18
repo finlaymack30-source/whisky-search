@@ -68,12 +68,13 @@ export default function CaskValuationPage() {
             <div>
               <h1 style={{
                 fontFamily: "'Freight Display Pro', 'Freight Display', Canela, Georgia, serif",
-                fontSize: isMobile ? 47 : 72,
+                fontSize: isMobile ? 38 : 48,
                 fontWeight: 500, lineHeight: 1.05,
                 color: C.dark, letterSpacing: '-0.01em',
                 marginBottom: 32, hyphens: 'none',
+                whiteSpace: isMobile ? 'normal' : 'nowrap',
               }}>
-                What is my<br />cask worth?
+                What is my cask worth?
               </h1>
               <CaskValuator isMobile={isMobile} onResult={() => setCaskHasResult(true)} />
             </div>
