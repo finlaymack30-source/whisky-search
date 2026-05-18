@@ -191,7 +191,7 @@ export default function MarketReportPage() {
   const col5 = isMobile ? '1fr' : '1fr 88px 56px 110px 88px'
 
   return (
-    <Layout dark>
+    <Layout dark lightTicker>
       <Helmet>
         <title>{TITLE}</title>
         <meta name="description" content={DESCRIPTION} />

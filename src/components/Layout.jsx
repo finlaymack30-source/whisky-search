@@ -87,10 +87,11 @@ function Ticker({ th }) {
   )
 }
 
-export default function Layout({ children, dark = false }) {
+export default function Layout({ children, dark = false, lightTicker = false }) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
   const location = useLocation()
-  const th = dark ? THEMES.dark : THEMES.light
+  const th       = dark ? THEMES.dark : THEMES.light
+  const tickerTh = (dark && lightTicker) ? THEMES.light : th
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768)
@@ -155,7 +156,7 @@ export default function Layout({ children, dark = false }) {
       </nav>
 
       <div style={{ paddingTop: 60 }}>
-        <Ticker th={th} />
+        <Ticker th={tickerTh} />
         {children}
       </div>
     </div>
