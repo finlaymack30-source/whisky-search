@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Helmet } from 'react-helmet-async'
 import CaskValuator from '../components/CaskValuator'
 
 const SANS  = "'DM Sans', 'Libre Franklin', system-ui, sans-serif"
@@ -212,8 +213,46 @@ export default function MarketPage() {
     whiteSpace: 'nowrap',
   })
 
+  const META = {
+    cask: {
+      title: 'Whisky Cask Valuation — The Bottle Keep',
+      description: 'Independent cask valuation model calibrated to live auction data. Understand what your whisky cask is worth in the current market — 97.9% reserve failure rate, 2.1% clearance. Free to try.',
+    },
+    market: {
+      title: 'Whisky Cask Market Report — The Bottle Keep',
+      description: 'Monthly intelligence on the whisky cask market. Clearance rates, bid-ask spreads, and distillery liquidity data updated from live auction results.',
+    },
+  }
+  const meta = META[page] ?? { title: 'The Bottle Keep — Whisky Cask Intelligence', description: '' }
+
+  const caskJsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'FinancialProduct',
+    name: 'Whisky Cask Valuation Tool',
+    description: META.cask.description,
+    url: 'https://www.thebottlekeep.co.uk/cask-valuation',
+    provider: {
+      '@type': 'Organization',
+      name: 'The Bottle Keep',
+      url: 'https://www.thebottlekeep.co.uk',
+    },
+  })
+
   return (
     <div style={{ fontFamily: SANS, background: C.bg, minHeight: '100vh' }}>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta property="og:title" content={meta.title} />
+        <meta property="og:description" content={meta.description} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={meta.title} />
+        <meta name="twitter:description" content={meta.description} />
+        {page === 'cask' && (
+          <script type="application/ld+json">{caskJsonLd}</script>
+        )}
+      </Helmet>
 
       {/* ── Navbar ─────────────────────────────────────────────────────────── */}
       <nav style={{
