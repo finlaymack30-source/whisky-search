@@ -315,6 +315,7 @@ function AuthModal({ mode, onClose, onSuccess, onSwitchMode }) {
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
 
   const fieldInput = {
     display: 'block', width: '100%', boxSizing: 'border-box',
@@ -341,19 +342,21 @@ function AuthModal({ mode, onClose, onSuccess, onSwitchMode }) {
         const { data, error: authErr } = await supabase.auth.signUp({ email, password })
         if (authErr) { setError(authErr.message); return }
         if (!data.session) {
-          setError('Please check your email to confirm your account, then sign in.')
+          // Email confirmation required — show the check-your-email screen
+          setEmailSent(true)
           return
         }
-        // Create subscription row — trial starts now
+        // Email confirmation disabled in Supabase — start trial immediately
         await supabase.from('user_subscriptions')
           .upsert({ user_id: data.user.id }, { onConflict: 'user_id', ignoreDuplicates: true })
-        const sub = await fetchSubscription(data.user.id)
-        onSuccess(sub)
+        onSuccess(await fetchSubscription(data.user.id))
       } else {
         const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password })
         if (authErr) { setError(authErr.message); return }
-        const sub = await fetchSubscription(data.user.id)
-        onSuccess(sub)
+        // Upsert subscription row on every sign-in — creates it on first confirmed login
+        await supabase.from('user_subscriptions')
+          .upsert({ user_id: data.user.id }, { onConflict: 'user_id', ignoreDuplicates: true })
+        onSuccess(await fetchSubscription(data.user.id))
       }
     } catch {
       setError('Something went wrong. Please try again.')
@@ -362,20 +365,62 @@ function AuthModal({ mode, onClose, onSuccess, onSwitchMode }) {
     }
   }
 
+  const overlay = {
+    position: 'fixed', inset: 0, zIndex: 1000,
+    background: 'rgba(26,26,24,0.55)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: 24,
+  }
+
+  const card = {
+    background: C.white, border: `1px solid ${C.border}`,
+    padding: '52px 48px', width: '100%', maxWidth: 420, borderRadius: 0,
+  }
+
+  // ── Email-sent confirmation screen ──
+  if (emailSent) {
+    return (
+      <div style={overlay} onClick={e => e.target === e.currentTarget && onClose()}>
+        <div style={card}>
+          <Label style={{ marginBottom: 14 }}>Confirm your email</Label>
+          <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 400, color: C.dark, marginBottom: 16 }}>
+            Check your inbox
+          </div>
+          <div style={{ fontSize: 13, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.7, marginBottom: 32 }}>
+            We've sent a confirmation link to{' '}
+            <span style={{ color: C.ink, fontFamily: MONO, fontSize: 12 }}>{email}</span>.
+            Click the link to activate your account, then come back and sign in.
+          </div>
+          <button
+            onClick={() => onSwitchMode('signin')}
+            style={{
+              display: 'block', width: '100%', padding: '14px',
+              background: C.dark, color: '#F5F2EC',
+              border: 'none', borderRadius: 0, fontSize: 10,
+              fontFamily: SANS, fontWeight: 400, cursor: 'pointer',
+              letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 20,
+            }}
+          >
+            Sign in after confirming
+          </button>
+          <div style={{ textAlign: 'center', fontSize: 12, color: C.muted, fontFamily: SANS, fontWeight: 300 }}>
+            Didn't receive it?{' '}
+            <button
+              type="button"
+              onClick={() => setEmailSent(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.ink, fontSize: 12, fontFamily: SANS, padding: 0, borderBottom: `1px solid ${C.borderMid}`, paddingBottom: 1 }}
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(26,26,24,0.55)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24,
-      }}
-      onClick={e => e.target === e.currentTarget && onClose()}
-    >
-      <div style={{
-        background: C.white, border: `1px solid ${C.border}`,
-        padding: '52px 48px', width: '100%', maxWidth: 420, borderRadius: 0,
-      }}>
+    <div style={overlay} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={card}>
         <div style={{ marginBottom: 36 }}>
           <Label style={{ marginBottom: 14 }}>
             {mode === 'create' ? 'New account' : 'Sign in'}
