@@ -588,6 +588,32 @@ export default function CaskValuator({ isMobile, onResult }) {
   const distRef = useRef(null)
   const suggRef = useRef(null)
 
+  // Restore valuation state saved before email confirmation redirect
+  useEffect(() => {
+    const raw = sessionStorage.getItem('tbk_restore')
+    if (!raw) return
+    try {
+      const saved = JSON.parse(raw)
+      setDistillery(saved.distillery || '')
+      setFillYear(String(saved.fillYear || ''))
+      setCaskType(saved.caskType || 'Hogshead')
+      setLpa(String(saved.lpa || ''))
+      setResult(saved.result)
+      onResult?.()
+    } catch {}
+    sessionStorage.removeItem('tbk_restore')
+  }, [])
+
+  // Save current valuation state before navigating away to signup/email confirmation
+  function openModal(mode) {
+    if (mode === 'create' && result) {
+      sessionStorage.setItem('tbk_restore', JSON.stringify(
+        { distillery, fillYear, caskType, lpa, result }
+      ))
+    }
+    setModal(mode)
+  }
+
   // Restore session on mount and listen for auth changes
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -619,7 +645,7 @@ export default function CaskValuator({ isMobile, onResult }) {
 
   async function handleStripeCheckout() {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setModal('create'); return }
+    if (!session) { openModal('create'); return }
     try {
       const res = await fetch('/.netlify/functions/create-checkout-session', {
         method: 'POST',
@@ -850,7 +876,7 @@ export default function CaskValuator({ isMobile, onResult }) {
           </div>
 
           {/* Gated content */}
-          <GatedContent subscription={subscription} onOpenModal={setModal} onStartCheckout={handleStripeCheckout} isMobile={isMobile}>
+          <GatedContent subscription={subscription} onOpenModal={openModal} onStartCheckout={handleStripeCheckout} isMobile={isMobile}>
 
             {/* Market Position */}
             <div style={{ ...sectionCard, marginBottom: 16 }}>
