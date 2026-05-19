@@ -60,7 +60,7 @@ const COLUMNS = [
 ]
 
 const TITLE       = 'Whisky Distillery Liquidity Index — The Bottle Keep'
-const DESCRIPTION = 'Clearance rates and market health for Scottish whisky cask distilleries. See which distilleries are selling at auction and which have zero clearance in 2026.'
+const DESCRIPTION = '10 Scottish distilleries tracked by cask clearance rate. GlenAllachie, Bowmore, and Glen Scotia showing 0% clearance in 2026.'
 
 const STATS = [
   { label: 'Distilleries Tracked',      value: '10',   descriptor: 'Cask lots tracked Jan–Apr 2026'           },
@@ -111,6 +111,7 @@ export default function DistilleryIndexPage() {
         <meta property="og:title" content={TITLE} />
         <meta property="og:description" content={DESCRIPTION} />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.thebottlekeep.co.uk/distillery-index" />
       </Helmet>
 
       <section style={{ background: C.bg, padding: isMobile ? '40px 24px 64px' : '56px 48px 80px' }}>

@@ -51,6 +51,7 @@ export default function CaskValuationPage() {
         <meta property="og:title" content={TITLE} />
         <meta property="og:description" content={DESCRIPTION2} />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.thebottlekeep.co.uk/cask-valuation" />
         <meta property="og:image" content="https://www.thebottlekeep.co.uk/logo.svg" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={TITLE} />

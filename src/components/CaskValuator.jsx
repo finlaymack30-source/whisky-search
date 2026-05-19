@@ -324,7 +324,7 @@ function RecentFeed() {
       const item = FEED_POOL[poolIdx.current % FEED_POOL.length]
       poolIdx.current++
       setEntries(prev => [{ ...item, minsAgo: 0 }, ...prev.slice(0, 3)])
-    }, 22000)
+    }, 157000)
     return () => clearInterval(add)
   }, [])
 
