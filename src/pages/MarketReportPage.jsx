@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import Layout from '../components/Layout'
+import { supabase } from '../supabase'
 
 const SANS    = "'DM Sans', 'Libre Franklin', system-ui, sans-serif"
 const MONO    = "'DM Mono', 'IBM Plex Mono', 'Roboto Mono', monospace"
@@ -179,6 +180,21 @@ export default function MarketReportPage() {
   const [isMobile, setIsMobile]   = useState(() => window.innerWidth < 768)
   const [email, setEmail]         = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+
+  async function handleMailingSubmit(e) {
+    e.preventDefault()
+    setSubmitError('')
+    if (!email.trim()) return
+    const { error } = await supabase
+      .from('mailing_list')
+      .insert({ email: email.trim(), created_at: new Date().toISOString() })
+    if (error && !error.message?.includes('duplicate')) {
+      setSubmitError('Something went wrong. Please try again.')
+      return
+    }
+    setSubmitted(true)
+  }
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768)
@@ -317,8 +333,43 @@ export default function MarketReportPage() {
         </div>
       </section>
 
+      {/* ── Mailing List ─────────────────────────────────────────────────────── */}
+      <section style={{ background: D.bg, borderTop: `1px solid ${D.border}`, borderBottom: `1px solid ${D.border}` }}>
+        <div style={{ padding: isMobile ? '36px 16px' : '44px 48px' }}>
+          <div style={{ maxWidth: 640 }}>
+            <h2 style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 34, fontWeight: 400, lineHeight: 1.1, color: D.text, letterSpacing: '-0.01em', marginBottom: 12 }}>
+              Monthly market briefing — free.
+            </h2>
+            <p style={{ fontSize: 13, fontFamily: SANS, color: D.muted, lineHeight: 1.5, marginBottom: 24, margin: '0 0 24px' }}>
+              Clearance rates, bid-ask spreads, and distillery intelligence delivered on the first of each month.
+            </p>
+            {submitted ? (
+              <div style={{ fontSize: 14, fontFamily: SANS, color: D.muted }}>
+                You'll receive the next briefing on 1 June 2026.
+              </div>
+            ) : (
+              <>
+                <form onSubmit={handleMailingSubmit} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 8 }}>
+                  <input
+                    type="email" placeholder="your@email.com" value={email} required
+                    onChange={e => setEmail(e.target.value)}
+                    style={{ flex: 1, padding: '11px 14px', background: D.surface, border: `1px solid ${D.border}`, fontSize: 13, fontFamily: MONO, color: D.text, outline: 'none' }}
+                  />
+                  <button type="submit" style={{ padding: '11px 24px', background: D.terracotta, color: D.text, border: 'none', fontSize: 9, fontFamily: SANS, fontWeight: 400, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    Submit
+                  </button>
+                </form>
+                {submitError && (
+                  <div style={{ marginTop: 10, fontSize: 12, fontFamily: SANS, color: D.terracotta }}>{submitError}</div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* ── Reserve Failure Rate — line chart ──────────────────────────────── */}
-      <section style={{ background: D.bg, padding: sp, borderTop: `1px solid ${D.border}`, borderBottom: `1px solid ${D.border}` }}>
+      <section style={{ background: D.bg, padding: sp, borderBottom: `1px solid ${D.border}` }}>
         <Lbl>Reserve Failure Rate 2020–2026</Lbl>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20, flexWrap: 'wrap', gap: 8 }}>
           <h2 style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 28, fontWeight: 400, lineHeight: 1.1, color: D.text, letterSpacing: '-0.01em', margin: 0 }}>
@@ -400,41 +451,8 @@ export default function MarketReportPage() {
         </div>
       </section>
 
-      {/* ── Email Capture ────────────────────────────────────────────────────── */}
-      <section style={{ background: D.surface, padding: isMobile ? '36px 16px' : '44px 48px', borderBottom: `1px solid ${D.border}` }}>
-        <div style={{ maxWidth: 520 }}>
-          <Lbl color={D.terracotta}>Free monthly briefing</Lbl>
-          <h2 style={{ fontFamily: DISPLAY, fontSize: isMobile ? 28 : 38, fontWeight: 500, lineHeight: 1.05, color: D.text, letterSpacing: '-0.01em', marginBottom: 10 }}>
-            Whisky market<br />intelligence, monthly
-          </h2>
-          <p style={{ fontSize: 13, fontFamily: SANS, color: D.muted, lineHeight: 1.4, marginBottom: 8 }}>
-            Auction liquidity, clearance rates, cask market health.
-          </p>
-          <div style={{ fontSize: 10, fontFamily: MONO, color: D.dim, letterSpacing: '0.08em', marginBottom: 20 }}>
-            Next issue: Whisky Market Pulse — May 2026
-          </div>
-          {submitted ? (
-            <div style={{ padding: '14px 18px', background: 'rgba(74,124,89,0.1)', border: `1px solid rgba(74,124,89,0.25)` }}>
-              <div style={{ fontSize: 14, fontFamily: SANS, color: D.green }}>You're on the list.</div>
-              <div style={{ fontSize: 12, fontFamily: SANS, color: D.dim, marginTop: 4 }}>We'll send the May issue as soon as it's ready.</div>
-            </div>
-          ) : (
-            <form onSubmit={e => { e.preventDefault(); if (email.trim()) setSubmitted(true) }} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 8 }}>
-              <input
-                type="email" placeholder="your@email.com" value={email} required
-                onChange={e => setEmail(e.target.value)}
-                style={{ flex: 1, padding: '10px 14px', background: D.bg, border: `1px solid ${D.border}`, fontSize: 13, fontFamily: MONO, color: D.text, outline: 'none' }}
-              />
-              <button type="submit" style={{ padding: '10px 22px', background: D.terracotta, color: D.text, border: 'none', fontSize: 9, fontFamily: SANS, fontWeight: 400, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                Join free
-              </button>
-            </form>
-          )}
-          <p style={{ fontSize: 11, fontFamily: SANS, color: D.dim, marginTop: 10 }}>No spam. Unsubscribe anytime.</p>
-        </div>
-      </section>
 
-      {/* ── SEO ─────────────────────────────────────────────────────────────── */}
+{/* ── SEO ─────────────────────────────────────────────────────────────── */}
       <section style={{ background: D.bg, padding: sp, borderBottom: `1px solid ${D.border}` }}>
         <Lbl>Market Context</Lbl>
         <h2 style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 28, fontWeight: 400, lineHeight: 1.1, color: D.text, letterSpacing: '-0.01em', marginBottom: 18 }}>

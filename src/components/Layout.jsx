@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { User } from 'lucide-react'
+import { supabase, fetchSubscription } from '../supabase'
+import AuthModal from './AuthModal'
 
 const SANS = "'DM Sans', 'Libre Franklin', system-ui, sans-serif"
 const MONO = "'DM Mono', 'IBM Plex Mono', 'Roboto Mono', monospace"
@@ -87,8 +90,22 @@ function Ticker({ th }) {
   )
 }
 
+function sessionStatus(sub) {
+  if (!sub) return 'none'
+  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
+  if (sub.paid_until && new Date(sub.paid_until) > new Date()) return 'active'
+  if (Date.now() - new Date(sub.trial_started_at).getTime() < THIRTY_DAYS) return 'trial'
+  return 'expired'
+}
+
 export default function Layout({ children, dark = false }) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  const [authUser, setAuthUser] = useState(null)
+  const [sub, setSub] = useState(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authModalMode, setAuthModalMode] = useState('create')
+  const dropdownRef = useRef(null)
   const location = useLocation()
   const th  = dark ? THEMES.dark : THEMES.light
   const nav = THEMES.light  // navbar always light — consistent brand element
@@ -98,6 +115,40 @@ export default function Layout({ children, dark = false }) {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  useEffect(() => {
+    const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setAuthUser(session.user)
+          setSub(await fetchSubscription(session.user.id))
+        } else {
+          setAuthUser(null)
+          setSub(null)
+        }
+      }
+    )
+    return () => authListener.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    function handler(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const status = sessionStatus(sub)
+
+  function trialExpiry() {
+    if (!sub?.trial_started_at) return null
+    const d = new Date(sub.trial_started_at)
+    d.setDate(d.getDate() + 30)
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
 
   const isCask   = location.pathname === '/cask-valuation'
   const isMarket = location.pathname === '/market-report'
@@ -136,10 +187,78 @@ export default function Layout({ children, dark = false }) {
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <Link to="/cask-valuation" style={navLink(isCask)}>Cask valuation</Link>
           <Link to="/market-report"  style={navLink(isMarket)}>Market report</Link>
+
+          {/* Profile icon */}
+          <div ref={dropdownRef} style={{ position: 'relative', marginLeft: 16, display: 'flex', alignItems: 'center' }}>
+            <button
+              onClick={() => authUser ? setDropdownOpen(o => !o) : (setAuthModalMode('create'), setShowAuthModal(true))}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: 4, position: 'relative',
+              }}
+              aria-label={authUser ? 'Account menu' : 'Sign in'}
+            >
+              <User
+                size={20}
+                strokeWidth={1.5}
+                color={authUser ? nav.navActive : nav.navInactive}
+                style={{ opacity: authUser ? 1 : 0.45 }}
+              />
+              {authUser && (
+                <span style={{
+                  position: 'absolute', bottom: 2, right: 2,
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: '#7A3328',
+                  border: `1.5px solid ${nav.navBg}`,
+                }} />
+              )}
+            </button>
+
+            {dropdownOpen && authUser && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                background: nav.navBg, border: `1px solid ${nav.navBorder}`,
+                minWidth: 220, zIndex: 300,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+              }}>
+                <div style={{ padding: '14px 16px', borderBottom: `1px solid ${nav.navBorder}` }}>
+                  <div style={{ fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: nav.navInactive, fontFamily: SANS, marginBottom: 4 }}>
+                    {status === 'active' ? 'Subscriber' : status === 'trial' ? 'Free trial' : 'Trial ended'}
+                  </div>
+                  <div style={{ fontSize: 12, fontFamily: MONO, color: nav.navActive, wordBreak: 'break-all' }}>
+                    {authUser.email}
+                  </div>
+                  {status === 'trial' && trialExpiry() && (
+                    <div style={{ fontSize: 10, color: nav.navInactive, fontFamily: SANS, marginTop: 4 }}>
+                      Trial ends {trialExpiry()}
+                    </div>
+                  )}
+                  {status === 'active' && sub?.paid_until && (
+                    <div style={{ fontSize: 10, color: nav.navInactive, fontFamily: SANS, marginTop: 4 }}>
+                      Active until {new Date(sub.paid_until).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={async () => { setDropdownOpen(false); await supabase.auth.signOut() }}
+                  style={{
+                    display: 'block', width: '100%', padding: '12px 16px',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    textAlign: 'left', fontSize: 11, fontFamily: SANS, fontWeight: 400,
+                    color: nav.navInactive, letterSpacing: '0.04em',
+                  }}
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
+
           {!isMobile && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              marginLeft: 24, paddingLeft: 24,
+              marginLeft: 20, paddingLeft: 20,
               borderLeft: `1px solid ${nav.navDivider}`,
             }}>
               <div style={{ width: 5, height: 5, borderRadius: '50%', background: nav.navBadge, flexShrink: 0 }} />
@@ -159,6 +278,15 @@ export default function Layout({ children, dark = false }) {
         <Ticker th={th} />
         {children}
       </div>
+
+      {showAuthModal && (
+        <AuthModal
+          mode={authModalMode}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => setShowAuthModal(false)}
+          onSwitchMode={m => setAuthModalMode(m)}
+        />
+      )}
     </div>
   )
 }
