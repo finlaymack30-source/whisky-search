@@ -494,9 +494,10 @@ function AuthModal({ mode, onClose, onSuccess, onSwitchMode }) {
 // Active/trial sessions: render children fully.
 // Locked: show a clipped, fading preview of the content, then an inline card in page flow.
 
-function GatedContent({ subscription, onOpenModal, onStartCheckout, isMobile, children }) {
+function GatedContent({ subscription, authLoading, onOpenModal, onStartCheckout, isMobile, children }) {
   const status = sessionStatus(subscription)
-  if (status === 'active' || status === 'trial') return <>{children}</>
+  // Don't render gate until we know auth state — avoids flash for returning users
+  if (authLoading || status === 'active' || status === 'trial') return <>{children}</>
 
   const isExpired = status === 'expired'
   const CLIP_HEIGHT = isMobile ? 260 : 340
@@ -584,6 +585,7 @@ export default function CaskValuator({ isMobile, onResult }) {
   const [suggestions, setSuggestions] = useState([])
   const [showSugg, setShowSugg]     = useState(false)
   const [subscription, setSubscription] = useState(null)
+  const [authLoading, setAuthLoading]   = useState(true)
   const [modal, setModal]               = useState(null)
   const distRef = useRef(null)
   const suggRef = useRef(null)
@@ -614,18 +616,21 @@ export default function CaskValuator({ isMobile, onResult }) {
     setModal(mode)
   }
 
-  // Restore session on mount and listen for auth changes
+  // Check session on mount, keep in sync across tabs, expose authLoading so
+  // GatedContent never flashes the gate before we know the auth state.
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) setSubscription(await fetchSubscription(session.user.id))
-    })
-    const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(async (_, session) => {
-      if (session?.user) {
-        setSubscription(await fetchSubscription(session.user.id))
-      } else {
-        setSubscription(null)
+    const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          const sub = await fetchSubscription(session.user.id)
+          setSubscription(sub)
+        } else {
+          setSubscription(null)
+        }
+        // INITIAL_SESSION fires once on mount — marks auth as resolved
+        if (event === 'INITIAL_SESSION') setAuthLoading(false)
       }
-    })
+    )
     return () => authListener.unsubscribe()
   }, [])
 
@@ -876,7 +881,7 @@ export default function CaskValuator({ isMobile, onResult }) {
           </div>
 
           {/* Gated content */}
-          <GatedContent subscription={subscription} onOpenModal={openModal} onStartCheckout={handleStripeCheckout} isMobile={isMobile}>
+          <GatedContent subscription={subscription} authLoading={authLoading} onOpenModal={openModal} onStartCheckout={handleStripeCheckout} isMobile={isMobile}>
 
             {/* Market Position */}
             <div style={{ ...sectionCard, marginBottom: 16 }}>
