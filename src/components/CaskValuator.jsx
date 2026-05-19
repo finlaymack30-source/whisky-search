@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { supabase, fetchSubscription } from '../supabase'
-import AuthModal from './AuthModal'
+import { supabase } from '../supabase'
 import {
   valueCask, findComparables, getTier, getBeautyScore,
   KNOWN_DISTILLERIES, ageMultiplier, caskTypeMultiplier,
@@ -42,7 +41,6 @@ const CASK_TYPES = [
   'Virgin Oak Barrel', 'Fresh Bourbon Barrel',
 ]
 
-// Standard industry LPA by cask type — used when user does not specify
 const DEFAULT_LPA = {
   'Hogshead': 200, '1st Fill Bourbon Hogshead': 205, 'Refill Bourbon Hogshead': 195,
   'Sherry Hogshead': 220, '1st Fill Sherry Hogshead': 225, 'Refill Sherry Hogshead': 210,
@@ -290,102 +288,6 @@ function ComparableRow({ comp, isLast }) {
   )
 }
 
-// ─── Subscription helpers ─────────────────────────────────────────────────────
-
-function sessionStatus(sub) {
-  if (!sub) return 'none'
-  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
-  if (sub.paid_until && new Date(sub.paid_until) > new Date()) return 'active'
-  if (Date.now() - new Date(sub.trial_started_at).getTime() < THIRTY_DAYS) return 'trial'
-  return 'expired'
-}
-
-
-
-// ─── GatedContent ─────────────────────────────────────────────────────────────
-// Active/trial sessions: render children fully.
-// Locked: show a clipped, fading preview of the content, then an inline card in page flow.
-
-function GatedContent({ subscription, authLoading, onOpenModal, onStartCheckout, isMobile, children }) {
-  const status = sessionStatus(subscription)
-  // Don't render gate until we know auth state — avoids flash for returning users
-  if (authLoading || status === 'active' || status === 'trial') return <>{children}</>
-
-  const isExpired = status === 'expired'
-  const CLIP_HEIGHT = isMobile ? 260 : 340
-
-  return (
-    <div>
-      {/* Clipped preview with gradient fade */}
-      <div style={{ position: 'relative', maxHeight: CLIP_HEIGHT, overflow: 'hidden' }}>
-        {children}
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: 200,
-          background: `linear-gradient(to bottom, transparent, ${C.bg})`,
-          pointerEvents: 'none',
-        }} />
-      </div>
-
-      {/* Inline card */}
-      <div style={{
-        maxWidth: isMobile ? '100%' : 440,
-        margin: isMobile ? '40px 0 0' : '48px auto 0',
-        padding: isMobile ? '36px 24px' : '44px 44px',
-        background: C.bg,
-        border: `1px solid ${C.border}`,
-        borderRadius: 2,
-      }}>
-        <Label style={{ marginBottom: 14 }}>Full analysis</Label>
-
-        <div style={{
-          fontFamily: SERIF, fontSize: 22, fontWeight: 400,
-          color: C.dark, marginBottom: 12, lineHeight: 1.2,
-        }}>
-          {isExpired ? 'Your free trial has ended' : 'Unlock full analysis'}
-        </div>
-
-        <div style={{
-          fontSize: 13, color: C.muted, fontFamily: SANS, fontWeight: 300,
-          lineHeight: 1.7, marginBottom: 32,
-        }}>
-          {isExpired
-            ? <>Subscribe to continue at <span style={{ fontFamily: MONO }}>£49</span>/month.</>
-            : <>Free for 30 days, then <span style={{ fontFamily: MONO }}>£49</span>/month. No card required to start.</>}
-        </div>
-
-        <button
-          onClick={() => isExpired ? onStartCheckout() : onOpenModal('create')}
-          style={{
-            display: 'block', width: '100%', padding: '10px 16px',
-            background: C.dark, color: '#F5F2EC',
-            border: 'none', borderRadius: 0, fontSize: 9,
-            fontFamily: SANS, fontWeight: 400,
-            cursor: 'pointer', letterSpacing: '0.18em', textTransform: 'uppercase',
-            marginBottom: 14,
-          }}
-        >
-          {isExpired ? 'Subscribe — £49/month' : 'Create free account — no card required'}
-        </button>
-
-        {!isExpired && (
-          <button
-            onClick={() => onOpenModal('signin')}
-            style={{
-              display: 'block', width: '100%',
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: C.muted, fontSize: 12, fontFamily: SANS, fontWeight: 300,
-              letterSpacing: '0.02em', textAlign: 'center', padding: 0,
-            }}
-          >
-            Already a member? Sign in
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // ─── RecentFeed ───────────────────────────────────────────────────────────────
 
 const FEED_POOL = [
@@ -462,98 +364,17 @@ function RecentFeed() {
 // ─── CaskValuator ─────────────────────────────────────────────────────────────
 
 export default function CaskValuator({ isMobile, onResult }) {
-  const [distillery, setDistillery] = useState('')
-  const [fillYear, setFillYear]     = useState('')
-  const [caskType, setCaskType]     = useState('Hogshead')
-  const [lpa, setLpa]               = useState('')
-  const [result, setResult]         = useState(null)
+  const [distillery, setDistillery]   = useState('')
+  const [fillYear, setFillYear]       = useState('')
+  const [caskType, setCaskType]       = useState('Hogshead')
+  const [lpa, setLpa]                 = useState('')
+  const [result, setResult]           = useState(null)
   const [suggestions, setSuggestions] = useState([])
-  const [showSugg, setShowSugg]     = useState(false)
-  const [subscription, setSubscription] = useState(null)
-  const [authLoading, setAuthLoading]   = useState(true)
-  const [modal, setModal]               = useState(null)
-  const distRef   = useRef(null)
-  const suggRef   = useRef(null)
-  const resultsRef = useRef(null)
-
-  // Query DB for saved valuation inputs, recalculate, populate state, scroll to results
-  async function restorePendingFromDB(user) {
-    const { data } = await supabase
-      .from('pending_valuations')
-      .select('*')
-      .eq('email', user.email)
-      .single()
-    if (!data) return
-    await supabase.from('pending_valuations').delete().eq('email', user.email)
-    const dist   = data.distillery || ''
-    const yr     = data.fill_year
-    const cType  = data.cask_type || 'Hogshead'
-    const lpaVal = data.lpa != null ? String(data.lpa) : ''
-    setDistillery(dist)
-    setFillYear(String(yr || ''))
-    setCaskType(cType)
-    setLpa(lpaVal)
-    if (dist && yr) {
-      const r = valueCask({ distillery: dist, fillYear: yr, caskType: cType, lpa: lpaVal ? parseFloat(lpaVal) : (DEFAULT_LPA[cType] ?? 200) })
-      setResult({ ...r, comparables: findComparables(dist, r.tier, r.age) })
-      onResult?.()
-      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
-    }
-  }
-
-  function openModal(mode) {
-    setModal(mode)
-  }
-
-  // Check session on mount, keep in sync across tabs.
-  // Restore pending valuation on INITIAL_SESSION (already signed in) and SIGNED_IN (just confirmed).
-  useEffect(() => {
-    const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          const sub = await fetchSubscription(session.user.id)
-          setSubscription(sub)
-          if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-            restorePendingFromDB(session.user)
-          }
-        } else {
-          setSubscription(null)
-        }
-        if (event === 'INITIAL_SESSION') setAuthLoading(false)
-      }
-    )
-    return () => authListener.unsubscribe()
-  }, [])
-
-  // After Stripe Checkout redirect, re-fetch subscription once webhook has processed
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('checkout') !== 'success') return
-    window.history.replaceState({}, '', window.location.pathname)
-    const refetch = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) return
-      setSubscription(await fetchSubscription(session.user.id))
-    }
-    setTimeout(refetch, 2000)
-    setTimeout(refetch, 5000)
-  }, [])
-
-  async function handleStripeCheckout() {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { openModal('create'); return }
-    try {
-      const res = await fetch('/.netlify/functions/create-checkout-session', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const { url } = await res.json()
-      window.location.href = url
-    } catch (err) {
-      console.error('Stripe checkout error:', err)
-    }
-  }
+  const [showSugg, setShowSugg]       = useState(false)
+  const [mailEmail, setMailEmail]     = useState('')
+  const [mailDone, setMailDone]       = useState(false)
+  const distRef = useRef(null)
+  const suggRef = useRef(null)
 
   useEffect(() => {
     function handler(e) {
@@ -592,6 +413,13 @@ export default function CaskValuator({ isMobile, onResult }) {
     onResult?.()
   }
 
+  async function handleMailSubmit(e) {
+    e.preventDefault()
+    if (!mailEmail.includes('@')) return
+    await supabase.from('mailing_list').upsert({ email: mailEmail }, { onConflict: 'email', ignoreDuplicates: true })
+    setMailDone(true)
+  }
+
   const inputStyle = {
     width: '100%', boxSizing: 'border-box', padding: '12px 14px',
     border: `1px solid ${C.borderMid}`, borderRadius: 0,
@@ -616,9 +444,9 @@ export default function CaskValuator({ isMobile, onResult }) {
   return (
     <div>
       <style>{`.tbk-field::placeholder { color: rgba(74,69,64,0.45); }`}</style>
+
       {/* ── Form ── */}
       <form onSubmit={onSubmit}>
-        {/* Row 1: Distillery — full width */}
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Distillery</label>
           <div ref={distRef} style={{ position: 'relative' }}>
@@ -655,7 +483,6 @@ export default function CaskValuator({ isMobile, onResult }) {
           </div>
         </div>
 
-        {/* Row 2: Fill Year, Cask Type, LPA */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: isMobile ? '1fr' : '28fr 44fr 28fr',
@@ -696,8 +523,8 @@ export default function CaskValuator({ isMobile, onResult }) {
 
       {/* ── Results ── */}
       {result && (
-        <div ref={resultsRef}>
-          {/* Value display — always visible */}
+        <div>
+          {/* Value display */}
           <div style={{
             paddingTop: 52, paddingBottom: 48,
             borderTop: `1px solid ${C.border}`,
@@ -713,7 +540,6 @@ export default function CaskValuator({ isMobile, onResult }) {
               gridTemplateColumns: isMobile ? '1fr' : result.total != null ? '1fr 1fr' : '1fr',
               gap: isMobile ? 36 : 56, marginBottom: 32,
             }}>
-              {/* Per LPA */}
               <div>
                 <div style={{ fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.stone, fontFamily: SANS, fontWeight: 400, marginBottom: 14 }}>
                   Per LPA
@@ -733,7 +559,6 @@ export default function CaskValuator({ isMobile, onResult }) {
                 </div>
               </div>
 
-              {/* Total */}
               {result.total != null && (
                 <div>
                   <div style={{ fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.stone, fontFamily: SANS, fontWeight: 400, marginBottom: 14 }}>
@@ -756,7 +581,6 @@ export default function CaskValuator({ isMobile, onResult }) {
               )}
             </div>
 
-            {/* Recovery */}
             <div style={{
               paddingTop: 20, borderTop: `1px solid ${C.border}`,
               display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'baseline',
@@ -773,159 +597,179 @@ export default function CaskValuator({ isMobile, onResult }) {
             </div>
           </div>
 
-          {/* Gated content */}
-          <GatedContent subscription={subscription} authLoading={authLoading} onOpenModal={openModal} onStartCheckout={handleStripeCheckout} isMobile={isMobile}>
-
-            {/* Market Position */}
-            <div style={{ ...sectionCard, marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 24 }}>
-                <Label>Market position — bid–ask spread</Label>
-                <div style={{ fontSize: 11, fontFamily: SANS, fontWeight: 300, color: result.capitulationMonths > 0 ? C.muted : C.green }}>
-                  {result.capitulationMonths > 0
-                    ? <><span style={{ fontFamily: MONO }}>~{result.capitulationMonths}</span> months to capitulation</>
-                    : 'Sellers at market'}
-                </div>
+          {/* Market Position */}
+          <div style={{ ...sectionCard, marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 24 }}>
+              <Label>Market position — bid–ask spread</Label>
+              <div style={{ fontSize: 11, fontFamily: SANS, fontWeight: 300, color: result.capitulationMonths > 0 ? C.muted : C.green }}>
+                {result.capitulationMonths > 0
+                  ? <><span style={{ fontFamily: MONO }}>~{result.capitulationMonths}</span> months to capitulation</>
+                  : 'Sellers at market'}
               </div>
+            </div>
 
-              <div style={{ marginBottom: 32 }}>
-                <BidAskBar buyerLpa={result.achievableLpa} sellerExpLpa={result.sellerExpLpa} gapPct={result.gapPct} />
-              </div>
+            <div style={{ marginBottom: 32 }}>
+              <BidAskBar buyerLpa={result.achievableLpa} sellerExpLpa={result.sellerExpLpa} gapPct={result.gapPct} />
+            </div>
 
-              <div style={{ marginBottom: 14, fontSize: 11, color: C.muted, fontFamily: SANS, fontWeight: 300 }}>
-                Seller–buyer convergence
-              </div>
-              <ConvergenceChart
-                peakLpa={result.recoveryLpa}
-                sellerExpLpa={result.sellerExpLpa}
-                buyerLpa={result.achievableLpa}
-                decayRate={result.decayRate}
-                capitulationMonths={result.capitulationMonths}
+            <div style={{ marginBottom: 14, fontSize: 11, color: C.muted, fontFamily: SANS, fontWeight: 300 }}>
+              Seller–buyer convergence
+            </div>
+            <ConvergenceChart
+              peakLpa={result.recoveryLpa}
+              sellerExpLpa={result.sellerExpLpa}
+              buyerLpa={result.achievableLpa}
+              decayRate={result.decayRate}
+              capitulationMonths={result.capitulationMonths}
+            />
+            <div style={{ marginTop: 14, fontSize: 11, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.65 }}>
+              Seller expectation anchored to Jan 2024 peak, decaying at{' '}
+              <span style={{ fontFamily: MONO }}>{(result.decayRate * 100).toFixed(1)}%</span>/month
+              (Tier {result.tier} — {result.tierLabel} sellers are{' '}
+              {result.tier === 1 ? 'highly patient' : result.tier === 2 ? 'moderately patient' : 'motivated to sell'}).
+              Convergence assumes static buyer willingness.
+            </div>
+          </div>
+
+          {/* Valuation factors + Cask profile */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div style={sectionCard}>
+              <Label style={{ marginBottom: 20 }}>Valuation factors</Label>
+              <FactorBar
+                label="Fundamental (liquid × age × cask)"
+                value={result.fundamentalLpa}
+                maxValue={Math.max(result.p80Lpa, result.fundamentalLpa) * 1.1}
+                color={C.green}
+                note={`${fmtLpa(result.fundamentalLpa)}/LPA`}
               />
-              <div style={{ marginTop: 14, fontSize: 11, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.65 }}>
-                Seller expectation anchored to Jan 2024 peak, decaying at{' '}
-                <span style={{ fontFamily: MONO }}>{(result.decayRate * 100).toFixed(1)}%</span>/month
-                (Tier {result.tier} — {result.tierLabel} sellers are{' '}
-                {result.tier === 1 ? 'highly patient' : result.tier === 2 ? 'moderately patient' : 'motivated to sell'}).
-                Convergence assumes static buyer willingness.
+              <FactorBar
+                label="Copula amplification (ρ = 0.72, age×rep)"
+                value={(result.copulaFactor - 1) * result.fundamentalLpa}
+                maxValue={Math.max(result.p80Lpa, result.fundamentalLpa) * 1.1}
+                color={C.stone}
+                note={`×${result.copulaFactor}`}
+              />
+              <FactorBar
+                label={`Beauty contest premium (compressed ${Math.round((1 - result.bcPremiumPct / 85) * 100)}%)`}
+                value={result.bcPremiumPct / 100 * result.fundamentalLpa}
+                maxValue={Math.max(result.p80Lpa, result.fundamentalLpa) * 1.1}
+                color="#7B5EA7"
+                note={`+${result.bcPremiumPct}%`}
+              />
+              <div style={{ marginTop: 18, paddingTop: 18, borderTop: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 12, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.65 }}>
+                  <span style={{ color: C.dark, fontWeight: 400 }}>Beauty contest score:</span>{' '}
+                  <span style={{ fontFamily: MONO }}>{Math.round(result.beautyScore * 100)}</span> / 100.{' '}
+                  In a functioning market, {result.distillery || distillery} commands a{' '}
+                  <span style={{ fontFamily: MONO }}>{Math.round(result.beautyScore * 85)}%</span> reflexive premium.
+                  Current market stress compresses this to{' '}
+                  <span style={{ fontFamily: MONO }}>{result.bcPremiumPct}%</span>.
+                </div>
               </div>
             </div>
 
-            {/* Two-column */}
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
-              {/* Valuation factors */}
-              <div style={sectionCard}>
-                <Label style={{ marginBottom: 20 }}>Valuation factors</Label>
-                <FactorBar
-                  label="Fundamental (liquid × age × cask)"
-                  value={result.fundamentalLpa}
-                  maxValue={Math.max(result.p80Lpa, result.fundamentalLpa) * 1.1}
-                  color={C.green}
-                  note={`${fmtLpa(result.fundamentalLpa)}/LPA`}
-                />
-                <FactorBar
-                  label="Copula amplification (ρ = 0.72, age×rep)"
-                  value={(result.copulaFactor - 1) * result.fundamentalLpa}
-                  maxValue={Math.max(result.p80Lpa, result.fundamentalLpa) * 1.1}
-                  color={C.stone}
-                  note={`×${result.copulaFactor}`}
-                />
-                <FactorBar
-                  label={`Beauty contest premium (compressed ${Math.round((1 - result.bcPremiumPct / 85) * 100)}%)`}
-                  value={result.bcPremiumPct / 100 * result.fundamentalLpa}
-                  maxValue={Math.max(result.p80Lpa, result.fundamentalLpa) * 1.1}
-                  color="#7B5EA7"
-                  note={`+${result.bcPremiumPct}%`}
-                />
-                <div style={{ marginTop: 18, paddingTop: 18, borderTop: `1px solid ${C.border}` }}>
-                  <div style={{ fontSize: 12, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.65 }}>
-                    <span style={{ color: C.dark, fontWeight: 400 }}>Beauty contest score:</span>{' '}
-                    <span style={{ fontFamily: MONO }}>{Math.round(result.beautyScore * 100)}</span> / 100.{' '}
-                    In a functioning market, {result.distillery || distillery} commands a{' '}
-                    <span style={{ fontFamily: MONO }}>{Math.round(result.beautyScore * 85)}%</span> reflexive premium.
-                    Current market stress compresses this to{' '}
-                    <span style={{ fontFamily: MONO }}>{result.bcPremiumPct}%</span>.
-                  </div>
-                </div>
-              </div>
-
-              {/* Cask profile */}
-              <div style={sectionCard}>
-                <Label style={{ marginBottom: 20 }}>Cask profile</Label>
-                {[
-                  { label: 'Distillery',          value: distillery,                              mono: false },
-                  { label: 'Distillery tier',     value: `Tier ${result.tier} — ${result.tierLabel}`, mono: false },
-                  { label: 'Age',                 value: `${result.age} years`,                  mono: true  },
-                  { label: 'Cask type',           value: caskType,                               mono: false },
-                  { label: 'Age multiplier',      value: `${result.ageMult}×`,                   mono: true  },
-                  { label: 'Cask type multiplier',value: `${result.caskMult}×`,                  mono: true  },
-                  { label: 'Liquidity',           value: result.liquidityLabel,                  mono: false },
-                  { label: 'Confidence',          value: result.confidence,                      mono: false },
-                  { label: 'Estimate range (±)',  value: `${result.uncertainty}%`,               mono: true  },
-                ].map(row => (
-                  <div key={row.label} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-                    padding: '8px 0', borderBottom: `1px solid ${C.border}`,
-                  }}>
-                    <span style={{ fontSize: 12, color: C.muted, fontFamily: SANS, fontWeight: 300 }}>{row.label}</span>
-                    <span style={{ fontSize: 12, color: C.dark, fontFamily: row.mono ? MONO : SANS, fontWeight: 400 }}>{row.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Comparables */}
-            {result.comparables && result.comparables.length > 0 && (
-              <div style={{ ...sectionCard, padding: 0, marginBottom: 16, overflow: 'hidden' }}>
-                <div style={{ padding: '20px 20px 0', marginBottom: 10 }}>
-                  <Label>Comparable sales</Label>
-                </div>
-                <div style={{
-                  display: 'grid', gridTemplateColumns: '1fr 90px 90px 56px',
-                  padding: '10px 20px', background: C.bg,
-                  borderBottom: `1px solid ${C.border}`,
-                  borderTop: `1px solid ${C.border}`,
+            <div style={sectionCard}>
+              <Label style={{ marginBottom: 20 }}>Cask profile</Label>
+              {[
+                { label: 'Distillery',           value: distillery,                              mono: false },
+                { label: 'Distillery tier',      value: `Tier ${result.tier} — ${result.tierLabel}`, mono: false },
+                { label: 'Age',                  value: `${result.age} years`,                  mono: true  },
+                { label: 'Cask type',            value: caskType,                               mono: false },
+                { label: 'Age multiplier',       value: `${result.ageMult}×`,                   mono: true  },
+                { label: 'Cask type multiplier', value: `${result.caskMult}×`,                  mono: true  },
+                { label: 'Liquidity',            value: result.liquidityLabel,                  mono: false },
+                { label: 'Confidence',           value: result.confidence,                      mono: false },
+                { label: 'Estimate range (±)',   value: `${result.uncertainty}%`,               mono: true  },
+              ].map(row => (
+                <div key={row.label} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                  padding: '8px 0', borderBottom: `1px solid ${C.border}`,
                 }}>
-                  {['Distillery / Details', '£/LPA', 'Total', 'Source'].map(h => (
-                    <div key={h} style={{
-                      fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase',
-                      color: C.stone, fontFamily: SANS, fontWeight: 400,
-                      textAlign: h !== 'Distillery / Details' ? 'right' : 'left',
-                    }}>{h}</div>
-                  ))}
+                  <span style={{ fontSize: 12, color: C.muted, fontFamily: SANS, fontWeight: 300 }}>{row.label}</span>
+                  <span style={{ fontSize: 12, color: C.dark, fontFamily: row.mono ? MONO : SANS, fontWeight: 400 }}>{row.value}</span>
                 </div>
-                {result.comparables.map((c, i) => (
-                  <ComparableRow key={i} comp={c} isLast={i === result.comparables.length - 1} />
+              ))}
+            </div>
+          </div>
+
+          {/* Comparables */}
+          {result.comparables && result.comparables.length > 0 && (
+            <div style={{ ...sectionCard, padding: 0, marginBottom: 16, overflow: 'hidden' }}>
+              <div style={{ padding: '20px 20px 0', marginBottom: 10 }}>
+                <Label>Comparable sales</Label>
+              </div>
+              <div style={{
+                display: 'grid', gridTemplateColumns: '1fr 90px 90px 56px',
+                padding: '10px 20px', background: C.bg,
+                borderBottom: `1px solid ${C.border}`,
+                borderTop: `1px solid ${C.border}`,
+              }}>
+                {['Distillery / Details', '£/LPA', 'Total', 'Source'].map(h => (
+                  <div key={h} style={{
+                    fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase',
+                    color: C.stone, fontFamily: SANS, fontWeight: 400,
+                    textAlign: h !== 'Distillery / Details' ? 'right' : 'left',
+                  }}>{h}</div>
                 ))}
               </div>
-            )}
-
-            {/* Methodology */}
-            <div style={{ padding: '20px 0', borderTop: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 11, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.75 }}>
-                <span style={{ color: C.ink, fontWeight: 400 }}>Methodology:</span>{' '}
-                Fundamental value is derived from base £/LPA rates calibrated from{' '}
-                {result.comparables?.length > 0 ? 'recent sold data' : 'tier and region benchmarks'}, scaled
-                by age and cask type. A bivariate Gaussian copula (ρ = 0.72) captures the
-                superlinear premium when age and distillery reputation are jointly high.
-                The Keynesian beauty contest component models reflexive sentiment premium,
-                compressed from its bull-market maximum by the current 97.9% reserve failure rate.
-                Not investment advice. Confidence: {result.confidence}. Range ±<span style={{ fontFamily: MONO }}>{result.uncertainty}%</span>.
-              </div>
+              {result.comparables.map((c, i) => (
+                <ComparableRow key={i} comp={c} isLast={i === result.comparables.length - 1} />
+              ))}
             </div>
+          )}
 
-          </GatedContent>
+          {/* Monthly briefing email capture */}
+          <div style={{ borderTop: `1px solid ${C.border}`, padding: '32px 0 32px', marginBottom: 0 }}>
+            <div style={{ fontSize: 8, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.terracotta, fontFamily: SANS, fontWeight: 400, marginBottom: 14 }}>
+              Monthly Market Briefing
+            </div>
+            {mailDone ? (
+              <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 400, color: C.dark, fontStyle: 'italic' }}>
+                You'll receive the June 2026 briefing.
+              </div>
+            ) : (
+              <>
+                <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: C.dark, marginBottom: 10, lineHeight: 1.15 }}>
+                  Get next month's update free.
+                </div>
+                <div style={{ fontSize: 13, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.6, marginBottom: 20 }}>
+                  Clearance rates, bid–ask data, and distillery intelligence delivered on the first of each month.
+                </div>
+                <form onSubmit={handleMailSubmit}>
+                  <input
+                    type="email" value={mailEmail} onChange={e => setMailEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '12px 14px', marginBottom: 10, border: `1px solid ${C.borderMid}`, borderRadius: 0, fontSize: 14, fontFamily: SANS, fontWeight: 300, color: C.dark, background: C.white, outline: 'none' }}
+                    className="tbk-field"
+                  />
+                  <button type="submit" style={{
+                    display: 'block', width: '100%', padding: '13px',
+                    background: C.dark, color: '#F5F2EC',
+                    border: 'none', borderRadius: 0, fontSize: 10,
+                    fontFamily: SANS, fontWeight: 400, cursor: 'pointer',
+                    letterSpacing: '0.2em', textTransform: 'uppercase',
+                  }}>
+                    Notify me
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+
+          {/* Methodology */}
+          <div style={{ padding: '20px 0', borderTop: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 11, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.75 }}>
+              <span style={{ color: C.ink, fontWeight: 400 }}>Methodology:</span>{' '}
+              Fundamental value is derived from base £/LPA rates calibrated from{' '}
+              {result.comparables?.length > 0 ? 'recent sold data' : 'tier and region benchmarks'}, scaled
+              by age and cask type. A bivariate Gaussian copula (ρ = 0.72) captures the
+              superlinear premium when age and distillery reputation are jointly high.
+              The Keynesian beauty contest component models reflexive sentiment premium,
+              compressed from its bull-market maximum by the current 97.9% reserve failure rate.
+              Not investment advice. Confidence: {result.confidence}. Range ±<span style={{ fontFamily: MONO }}>{result.uncertainty}%</span>.
+            </div>
+          </div>
         </div>
-      )}
-
-      {/* ── Modals ── */}
-      {(modal === 'create' || modal === 'signin') && (
-        <AuthModal
-          mode={modal}
-          onClose={() => setModal(null)}
-          onSuccess={sub => { setSubscription(sub); setModal(null) }}
-          onSwitchMode={m => setModal(m)}
-          pendingValuation={modal === 'create' ? { distillery, fillYear, caskType, lpa } : null}
-        />
       )}
     </div>
   )

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import Layout from '../components/Layout'
+import { supabase } from '../supabase'
 
 const SANS    = "'DM Sans', 'Libre Franklin', system-ui, sans-serif"
 const MONO    = "'DM Mono', 'IBM Plex Mono', 'Roboto Mono', monospace"
@@ -69,13 +70,22 @@ const STATS = [
 
 export default function DistilleryIndexPage() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
-  const [sort, setSort] = useState({ col: 'clearance', dir: 'asc' })
+  const [sort, setSort]         = useState({ col: 'clearance', dir: 'asc' })
+  const [mailEmail, setMailEmail] = useState('')
+  const [mailDone, setMailDone]   = useState(false)
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  async function handleMailSubmit(e) {
+    e.preventDefault()
+    if (!mailEmail.includes('@')) return
+    await supabase.from('mailing_list').upsert({ email: mailEmail }, { onConflict: 'email', ignoreDuplicates: true })
+    setMailDone(true)
+  }
 
   function handleSort(col) {
     setSort(s => s.col === col
@@ -218,6 +228,39 @@ export default function DistilleryIndexPage() {
           <p style={{ fontFamily: SANS, fontSize: 13, color: C.muted, lineHeight: 1.6, margin: 0, fontWeight: 300 }}>
             Analysis covers cask lots listed at Grand Whisky Auction, January–April 2026. Bottle auction data excluded. Reserve not met lots counted as unsold. Data updated monthly.
           </p>
+        </div>
+
+        {/* Email capture */}
+        <div style={{ borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: isMobile ? '28px 0' : '32px 0', marginBottom: 52 }}>
+          {mailDone ? (
+            <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 400, color: C.dark, fontStyle: 'italic' }}>
+              You'll be notified when June data publishes.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 24 : 48, alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 8, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.terracotta, fontFamily: SANS, fontWeight: 400, marginBottom: 12 }}>
+                  Stay updated
+                </div>
+                <div style={{ fontFamily: SERIF, fontSize: isMobile ? 20 : 24, fontWeight: 400, color: C.dark, marginBottom: 8, lineHeight: 1.15 }}>
+                  This index updates monthly.
+                </div>
+                <div style={{ fontSize: 13, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.6 }}>
+                  Get notified when June 2026 data publishes.
+                </div>
+              </div>
+              <form onSubmit={handleMailSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'stretch' : 'flex-end', gap: 10 }}>
+                <input
+                  type="email" value={mailEmail} onChange={e => setMailEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '12px 14px', border: `1px solid ${C.borderMid}`, borderRadius: 0, fontSize: 14, fontFamily: SANS, fontWeight: 300, color: C.dark, background: C.bg, outline: 'none' }}
+                />
+                <button type="submit" style={{ display: 'block', width: '100%', padding: '13px 28px', background: C.dark, color: '#F5F2EC', border: 'none', borderRadius: 0, fontSize: 10, fontFamily: SANS, fontWeight: 400, cursor: 'pointer', letterSpacing: '0.2em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                  Notify me
+                </button>
+              </form>
+            </div>
+          )}
         </div>
 
         {/* CTA */}

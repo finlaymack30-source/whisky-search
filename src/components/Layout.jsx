@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import AuthModal from './AuthModal'
 
-const SANS = "'DM Sans', 'Libre Franklin', system-ui, sans-serif"
-const MONO = "'DM Mono', 'IBM Plex Mono', 'Roboto Mono', monospace"
+const SANS  = "'DM Sans', 'Libre Franklin', system-ui, sans-serif"
+const SERIF = "'Cormorant Garamond', 'Playfair Display', Georgia, serif"
+const MONO  = "'DM Mono', 'IBM Plex Mono', 'Roboto Mono', monospace"
 
 const THEMES = {
   light: {
@@ -90,12 +91,96 @@ function Ticker({ th }) {
 }
 
 
+// ─── ExitIntentCapture ────────────────────────────────────────────────────────
+
+function ExitIntentCapture() {
+  const [visible, setVisible]   = useState(false)
+  const [email, setEmail]       = useState('')
+  const [done, setDone]         = useState(false)
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem('tbk_exit_dismissed') === '1' } catch { return false }
+  })
+
+  useEffect(() => {
+    if (dismissed) return
+    function onMouseMove(e) {
+      if (e.clientY < 50) setVisible(true)
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    return () => document.removeEventListener('mousemove', onMouseMove)
+  }, [dismissed])
+
+  function dismiss() {
+    setVisible(false)
+    setDismissed(true)
+    try { localStorage.setItem('tbk_exit_dismissed', '1') } catch {}
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!email.includes('@')) return
+    await supabase.from('mailing_list').upsert({ email }, { onConflict: 'email', ignoreDuplicates: true })
+    setDone(true)
+    try { localStorage.setItem('tbk_exit_dismissed', '1') } catch {}
+    setTimeout(dismiss, 1800)
+  }
+
+  if (!visible || dismissed) return null
+
+  const EC = { dark: '#1A1A18', muted: '#9A9080', border: '#E8E4DC', borderMid: '#D8D2C8', terracotta: '#7A3328' }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'rgba(26,26,24,0.35)' }}
+      onClick={e => e.target === e.currentTarget && dismiss()}
+    >
+      <div style={{ background: '#FFFFFF', border: `1px solid ${EC.border}`, padding: '44px 44px', width: '100%', maxWidth: 400, position: 'relative' }}>
+        <button
+          onClick={dismiss}
+          aria-label="Close"
+          style={{ position: 'absolute', top: 14, right: 16, background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: EC.muted, lineHeight: 1, padding: 4 }}
+        >
+          ×
+        </button>
+        <div style={{ fontSize: 8, letterSpacing: '0.22em', textTransform: 'uppercase', color: EC.terracotta, fontFamily: SANS, fontWeight: 400, marginBottom: 14 }}>
+          Before you go
+        </div>
+        {done ? (
+          <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: EC.dark, fontStyle: 'italic' }}>
+            You're on the list.
+          </div>
+        ) : (
+          <>
+            <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 400, color: EC.dark, marginBottom: 10, lineHeight: 1.2 }}>
+              Free monthly cask market briefing.
+            </div>
+            <div style={{ fontSize: 13, color: EC.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.65, marginBottom: 24 }}>
+              Join investors and brokers tracking the whisky cask market.
+            </div>
+            <form onSubmit={handleSubmit}>
+              <input
+                type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '12px 14px', marginBottom: 10, border: `1px solid ${EC.borderMid}`, borderRadius: 0, fontSize: 14, fontFamily: SANS, fontWeight: 300, color: EC.dark, background: '#FFFFFF', outline: 'none' }}
+              />
+              <button type="submit" style={{ display: 'block', width: '100%', padding: '13px', background: EC.dark, color: '#F5F2EC', border: 'none', borderRadius: 0, fontSize: 10, fontFamily: SANS, fontWeight: 400, cursor: 'pointer', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+                Notify me
+              </button>
+            </form>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Layout({ children, dark = false }) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
   const [authUser, setAuthUser] = useState(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authModalMode, setAuthModalMode] = useState('create')
   const location = useLocation()
+  const navigate = useNavigate()
   const th  = dark ? THEMES.dark : THEMES.light
   const nav = THEMES.light  // navbar always light — consistent brand element
 
@@ -162,8 +247,8 @@ export default function Layout({ children, dark = false }) {
                   {authUser.email.split('@')[0]}
                 </span>
                 <button
-                  onClick={() => supabase.auth.signOut()}
-                  style={{ height: 60, padding: isMobile ? '0 10px' : '0 14px', display: 'flex', alignItems: 'center', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 400, color: nav.navInactive, background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  onClick={() => supabase.auth.signOut().then(() => navigate('/cask-valuation'))}
+                  style={{ height: 60, padding: isMobile ? '0 10px' : '0 14px', display: 'flex', alignItems: 'center', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 400, color: nav.navInactive, opacity: 0.5, background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
                 >
                   Sign out
                 </button>
@@ -220,6 +305,8 @@ export default function Layout({ children, dark = false }) {
           onSwitchMode={m => setAuthModalMode(m)}
         />
       )}
+
+      <ExitIntentCapture />
     </div>
   )
 }
