@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 
 const SERIF = "'Cormorant Garamond', 'Playfair Display', Georgia, serif"
@@ -38,6 +38,13 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
   const [loading, setLoading]   = useState(false)
   const [emailSent, setEmailSent] = useState(false)
 
+  useEffect(() => {
+    const url = import.meta.env.VITE_SUPABASE_URL
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY
+    console.log('[auth] VITE_SUPABASE_URL:', url ?? 'UNDEFINED')
+    console.log('[auth] VITE_SUPABASE_ANON_KEY:', key ? `${key.slice(0, 20)}…` : 'UNDEFINED')
+  }, [])
+
   const fieldInput = {
     display: 'block', width: '100%', boxSizing: 'border-box',
     padding: '12px 14px', marginTop: 8,
@@ -58,11 +65,19 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
     if (!email.includes('@')) { setError('Please enter a valid email address.'); return }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
     setLoading(true)
-    // Safety net: if auth hangs for any reason, reload rather than stay stuck
-    const reloadTimer = setTimeout(() => window.location.reload(), 3000)
+
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 10000)
+    )
+
     try {
       if (mode === 'create') {
-        const { data, error: authErr } = await supabase.auth.signUp({ email, password })
+        console.log('[auth] calling signUp...')
+        const { data, error: authErr } = await Promise.race([
+          supabase.auth.signUp({ email, password }),
+          timeout,
+        ])
+        console.log('[auth] signUp resolved — error:', authErr?.message ?? null)
         if (authErr) { setError(authErr.message); return }
         if (!data.session) {
           setEmailSent(true)
@@ -70,14 +85,19 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
         }
         onSuccess()
       } else {
-        const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password })
+        console.log('[auth] calling signInWithPassword...')
+        const { data, error: authErr } = await Promise.race([
+          supabase.auth.signInWithPassword({ email, password }),
+          timeout,
+        ])
+        console.log('[auth] signInWithPassword resolved — error:', authErr?.message ?? null)
         if (authErr) { setError(authErr.message); return }
         onSuccess()
       }
-    } catch {
-      setError('Something went wrong. Please try again.')
+    } catch (err) {
+      console.error('[auth] caught error:', err?.message)
+      setError('Sign in failed — please try again.')
     } finally {
-      clearTimeout(reloadTimer)
       setLoading(false)
     }
   }
