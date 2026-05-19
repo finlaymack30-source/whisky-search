@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { supabase } from '../supabase'
 import {
   valueCask, findComparables, getTier, getBeautyScore,
   KNOWN_DISTILLERIES, ageMultiplier, caskTypeMultiplier,
@@ -288,27 +289,23 @@ function ComparableRow({ comp, isLast }) {
   )
 }
 
-// ─── Session helpers ──────────────────────────────────────────────────────────
+// ─── Subscription helpers ─────────────────────────────────────────────────────
 
-function getSession() {
-  try {
-    const raw = localStorage.getItem('tbk_session')
-    return raw ? JSON.parse(raw) : null
-  } catch { return null }
-}
-
-function saveSession(email) {
-  const s = { email, createdAt: Date.now() }
-  localStorage.setItem('tbk_session', JSON.stringify(s))
-  return s
-}
-
-function sessionStatus(session) {
-  if (!session) return 'none'
+function sessionStatus(sub) {
+  if (!sub) return 'none'
   const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
-  if (session.paidUntil && session.paidUntil > Date.now()) return 'active'
-  if (Date.now() - session.createdAt < THIRTY_DAYS) return 'trial'
+  if (sub.paid_until && new Date(sub.paid_until) > new Date()) return 'active'
+  if (Date.now() - new Date(sub.trial_started_at).getTime() < THIRTY_DAYS) return 'trial'
   return 'expired'
+}
+
+async function fetchSubscription(userId) {
+  const { data } = await supabase
+    .from('user_subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+  return data ?? null
 }
 
 // ─── AuthModal ────────────────────────────────────────────────────────────────
@@ -317,6 +314,7 @@ function AuthModal({ mode, onClose, onSuccess, onSwitchMode }) {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
 
   const fieldInput = {
     display: 'block', width: '100%', boxSizing: 'border-box',
@@ -332,20 +330,35 @@ function AuthModal({ mode, onClose, onSuccess, onSwitchMode }) {
     color: C.stone, fontFamily: SANS, fontWeight: 400,
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     if (!email.includes('@')) { setError('Please enter a valid email address.'); return }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
-    if (mode === 'create') {
-      onSuccess(saveSession(email))
-    } else {
-      const existing = getSession()
-      if (existing && existing.email === email) {
-        onSuccess(existing)
+    setLoading(true)
+    try {
+      if (mode === 'create') {
+        const { data, error: authErr } = await supabase.auth.signUp({ email, password })
+        if (authErr) { setError(authErr.message); return }
+        if (!data.session) {
+          setError('Please check your email to confirm your account, then sign in.')
+          return
+        }
+        // Create subscription row — trial starts now
+        await supabase.from('user_subscriptions')
+          .upsert({ user_id: data.user.id }, { onConflict: 'user_id', ignoreDuplicates: true })
+        const sub = await fetchSubscription(data.user.id)
+        onSuccess(sub)
       } else {
-        setError('No account found with that email.')
+        const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password })
+        if (authErr) { setError(authErr.message); return }
+        const sub = await fetchSubscription(data.user.id)
+        onSuccess(sub)
       }
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -397,15 +410,15 @@ function AuthModal({ mode, onClose, onSuccess, onSwitchMode }) {
             </div>
           )}
 
-          <button type="submit" style={{
+          <button type="submit" disabled={loading} style={{
             display: 'block', width: '100%', padding: '14px',
-            background: C.dark, color: '#F5F2EC',
+            background: loading ? C.muted : C.dark, color: '#F5F2EC',
             border: 'none', borderRadius: 0,
             fontSize: 10, fontFamily: SANS, fontWeight: 400,
-            cursor: 'pointer', letterSpacing: '0.2em', textTransform: 'uppercase',
+            cursor: loading ? 'default' : 'pointer', letterSpacing: '0.2em', textTransform: 'uppercase',
             marginBottom: 20,
           }}>
-            {mode === 'create' ? 'Create account — start free month' : 'Sign in'}
+            {loading ? 'Please wait…' : mode === 'create' ? 'Create account — start free month' : 'Sign in'}
           </button>
 
           <div style={{ textAlign: 'center', fontSize: 12, color: C.muted, fontFamily: SANS, fontWeight: 300 }}>
@@ -433,7 +446,7 @@ function AuthModal({ mode, onClose, onSuccess, onSwitchMode }) {
 
 // ─── PaymentModal ─────────────────────────────────────────────────────────────
 
-function PaymentModal({ session, onClose, onSuccess }) {
+function PaymentModal({ userId, onClose, onSuccess }) {
   const [cardNumber, setCardNumber] = useState('')
   const [expiry, setExpiry]         = useState('')
   const [cvc, setCvc]               = useState('')
@@ -454,18 +467,26 @@ function PaymentModal({ session, onClose, onSuccess }) {
     color: C.stone, fontFamily: SANS, fontWeight: 400,
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     if (!cardNumber.replace(/\s/g, '') || !expiry || !cvc) { setError('Please fill in all payment fields.'); return }
     setLoading(true)
-    setTimeout(() => {
-      const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
-      const updated = { ...session, paidUntil: Date.now() + THIRTY_DAYS }
-      localStorage.setItem('tbk_session', JSON.stringify(updated))
+    try {
+      const paidUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      const { data, error: dbErr } = await supabase
+        .from('user_subscriptions')
+        .update({ paid_until: paidUntil })
+        .eq('user_id', userId)
+        .select()
+        .single()
+      if (dbErr) { setError('Update failed. Please try again.'); return }
+      onSuccess(data)
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
       setLoading(false)
-      onSuccess(updated)
-    }, 900)
+    }
   }
 
   return (
@@ -534,8 +555,8 @@ function PaymentModal({ session, onClose, onSuccess }) {
 // Active/trial sessions: render children fully.
 // Locked: show a clipped, fading preview of the content, then an inline card in page flow.
 
-function GatedContent({ session, onOpenModal, isMobile, children }) {
-  const status = sessionStatus(session)
+function GatedContent({ subscription, onOpenModal, isMobile, children }) {
+  const status = sessionStatus(subscription)
   if (status === 'active' || status === 'trial') return <>{children}</>
 
   const isExpired = status === 'expired'
@@ -621,10 +642,31 @@ export default function CaskValuator({ isMobile, onResult }) {
   const [result, setResult]         = useState(null)
   const [suggestions, setSuggestions] = useState([])
   const [showSugg, setShowSugg]     = useState(false)
-  const [session, setSession]       = useState(() => getSession())
-  const [modal, setModal]           = useState(null)
+  const [subscription, setSubscription] = useState(null)
+  const [userId, setUserId]             = useState(null)
+  const [modal, setModal]               = useState(null)
   const distRef = useRef(null)
   const suggRef = useRef(null)
+
+  // Restore session on mount and listen for auth changes
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        setUserId(session.user.id)
+        setSubscription(await fetchSubscription(session.user.id))
+      }
+    })
+    const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(async (_, session) => {
+      if (session?.user) {
+        setUserId(session.user.id)
+        setSubscription(await fetchSubscription(session.user.id))
+      } else {
+        setUserId(null)
+        setSubscription(null)
+      }
+    })
+    return () => authListener.unsubscribe()
+  }, [])
 
   useEffect(() => {
     function handler(e) {
@@ -843,7 +885,7 @@ export default function CaskValuator({ isMobile, onResult }) {
           </div>
 
           {/* Gated content */}
-          <GatedContent session={session} onOpenModal={setModal} isMobile={isMobile}>
+          <GatedContent subscription={subscription} onOpenModal={setModal} isMobile={isMobile}>
 
             {/* Market Position */}
             <div style={{ ...sectionCard, marginBottom: 16 }}>
@@ -991,15 +1033,15 @@ export default function CaskValuator({ isMobile, onResult }) {
         <AuthModal
           mode={modal}
           onClose={() => setModal(null)}
-          onSuccess={s => { setSession(s); setModal(null) }}
+          onSuccess={sub => { setSubscription(sub); setModal(null) }}
           onSwitchMode={m => setModal(m)}
         />
       )}
       {modal === 'payment' && (
         <PaymentModal
-          session={session}
+          userId={userId}
           onClose={() => setModal(null)}
-          onSuccess={s => { setSession(s); setModal(null) }}
+          onSuccess={sub => { setSubscription(sub); setModal(null) }}
         />
       )}
     </div>
