@@ -47,6 +47,19 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
     console.log('[auth] VITE_SUPABASE_ANON_KEY:', key ? `${key.slice(0, 20)}…` : 'UNDEFINED')
   }, [])
 
+  // When waiting for email confirmation, listen for cross-tab SIGNED_IN.
+  // Supabase syncs session via BroadcastChannel/localStorage when the user
+  // confirms in another tab — this fires onSuccess() without any manual click.
+  useEffect(() => {
+    if (!emailSent) return
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        onSuccess()
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [emailSent])
+
   const fieldInput = {
     display: 'block', width: '100%', boxSizing: 'border-box',
     padding: '12px 14px', marginTop: 8,
