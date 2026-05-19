@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 // Use REST API directly — Supabase JS client blocks service keys in the browser
-const BASE = 'https://bxqokujhuofblkrzvlke.supabase.co'
+const BASE = import.meta.env.VITE_SUPABASE_URL
 const KEY = import.meta.env.VITE_SUPABASE_SERVICE_KEY
 const BUCKET = 'whisky-images'
 const H = { Authorization: `Bearer ${KEY}`, apikey: KEY }

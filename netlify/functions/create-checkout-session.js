@@ -1,7 +1,7 @@
-const Stripe = require('stripe')
-const { createClient } = require('@supabase/supabase-js')
+import Stripe from 'stripe'
+import { createClient } from '@supabase/supabase-js'
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method not allowed' }
   }
@@ -11,11 +11,9 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'No token' }) }
   }
 
-  const SUPABASE_URL = process.env.SUPABASE_URL || 'https://bxqokujhuofblkrzvlke.supabase.co'
-
   // Verify the user's JWT using the service role client
   const supabase = createClient(
-    SUPABASE_URL,
+    process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )

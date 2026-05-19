@@ -1,13 +1,12 @@
-const Stripe = require('stripe')
-const { createClient } = require('@supabase/supabase-js')
+import Stripe from 'stripe'
+import { createClient } from '@supabase/supabase-js'
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method not allowed' }
   }
 
   const stripe = Stripe(process.env.STRIPE_SECRET_KEY)
-  const SUPABASE_URL = process.env.SUPABASE_URL || 'https://bxqokujhuofblkrzvlke.supabase.co'
 
   // Netlify may base64-encode the body — decode it so Stripe gets the exact raw bytes
   const rawBody = event.isBase64Encoded
@@ -28,7 +27,7 @@ exports.handler = async (event) => {
   }
 
   const supabase = createClient(
-    SUPABASE_URL,
+    process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )

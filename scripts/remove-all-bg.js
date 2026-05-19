@@ -5,7 +5,7 @@
 import Jimp from 'jimp'
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = 'https://bxqokujhuofblkrzvlke.supabase.co'
+const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
 const BUCKET = 'whisky-images'
 const TOLERANCE = 32
