@@ -308,6 +308,38 @@ export default function Layout({ children, dark = false }) {
       <div style={{ paddingTop: 60 }}>
         <Ticker th={th} />
         {children}
+
+        <footer style={{
+          borderTop: '1px solid #E8E4DC',
+          background: '#FAFAF7',
+          padding: '24px 48px',
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'center' : 'center',
+          justifyContent: isMobile ? 'center' : 'space-between',
+          gap: isMobile ? 16 : 0,
+          textAlign: isMobile ? 'center' : 'left',
+        }}>
+          <div style={{ fontSize: 11, color: '#6B6B68', fontFamily: SANS, fontWeight: 400 }}>
+            <span style={{ letterSpacing: '0.14em', textTransform: 'uppercase' }}>The Bottle Keep</span>
+            {' — '}
+            Independent whisky cask intelligence
+          </div>
+
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 11, color: '#6B6B68', fontFamily: SANS }}>
+            <Link to="/cask-valuation" style={{ color: '#6B6B68', textDecoration: 'none', letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: 11 }}>Cask Valuation</Link>
+            <span style={{ opacity: 0.5 }}>·</span>
+            <Link to="/market-report"  style={{ color: '#6B6B68', textDecoration: 'none', letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: 11 }}>Market Report</Link>
+            <span style={{ opacity: 0.5 }}>·</span>
+            <Link to="/distillery-index" style={{ color: '#6B6B68', textDecoration: 'none', letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: 11 }}>Distillery Index</Link>
+          </div>
+
+          <div style={{ fontSize: 11, color: '#6B6B68', fontFamily: SANS, fontWeight: 400 }}>
+            <a href="mailto:support@thebottlekeep.co.uk" style={{ color: '#6B6B68', textDecoration: 'none' }}>support@thebottlekeep.co.uk</a>
+            {' · '}
+            © 2026 The Bottle Keep
+          </div>
+        </footer>
       </div>
 
       {showAuthModal && (
