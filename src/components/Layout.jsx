@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import AuthModal from './AuthModal'
@@ -176,9 +176,14 @@ function ExitIntentCapture() {
 
 export default function Layout({ children, dark = false }) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
-  const [authUser, setAuthUser] = useState(null)
+  const [authUser, setAuthUser]           = useState(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authModalMode, setAuthModalMode] = useState('create')
+  const [showWelcome, setShowWelcome]     = useState(false)
+  // Capture hash before Supabase processes and clears it
+  const isSignupConfirmation = useRef(
+    typeof window !== 'undefined' && window.location.hash.includes('type=signup')
+  )
   const location = useLocation()
   const navigate = useNavigate()
   const th  = dark ? THEMES.dark : THEMES.light
@@ -194,6 +199,14 @@ export default function Layout({ children, dark = false }) {
     const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setAuthUser(session?.user ?? null)
+        if (event === 'SIGNED_IN') {
+          setShowAuthModal(false)
+          if (isSignupConfirmation.current) {
+            isSignupConfirmation.current = false
+            setShowWelcome(true)
+            setTimeout(() => setShowWelcome(false), 4200)
+          }
+        }
       }
     )
     return () => authListener.unsubscribe()
@@ -304,6 +317,23 @@ export default function Layout({ children, dark = false }) {
           onSuccess={() => setShowAuthModal(false)}
           onSwitchMode={m => setAuthModalMode(m)}
         />
+      )}
+
+      {showWelcome && (
+        <>
+          <style>{`@keyframes tbk-welcome{0%{opacity:0;transform:translate(-50%,-6px)}12%{opacity:1;transform:translate(-50%,0)}78%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-6px)}}`}</style>
+          <div style={{
+            position: 'fixed', top: 92, left: '50%',
+            zIndex: 300, pointerEvents: 'none',
+            animation: 'tbk-welcome 4.2s ease forwards',
+            background: '#FFFFFF', border: `1px solid ${nav.navBorder}`,
+            padding: '13px 32px', whiteSpace: 'nowrap',
+          }}>
+            <span style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 400, color: '#1A1A18', letterSpacing: '-0.01em' }}>
+              Welcome to The Bottle Keep.
+            </span>
+          </div>
+        </>
       )}
 
       <ExitIntentCapture />
