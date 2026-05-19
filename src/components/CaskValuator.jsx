@@ -399,29 +399,46 @@ export default function CaskValuator({ isMobile, onResult }) {
   const [subscription, setSubscription] = useState(null)
   const [authLoading, setAuthLoading]   = useState(true)
   const [modal, setModal]               = useState(null)
-  const distRef = useRef(null)
-  const suggRef = useRef(null)
+  const distRef   = useRef(null)
+  const suggRef   = useRef(null)
+  const resultsRef = useRef(null)
 
-  // Restore valuation state saved before email confirmation redirect
-  useEffect(() => {
-    const raw = sessionStorage.getItem('tbk_restore')
+  // Re-run calculation from saved inputs and populate state, then scroll to results
+  function restorePending() {
+    const raw = sessionStorage.getItem('pendingValuation')
     if (!raw) return
+    sessionStorage.removeItem('pendingValuation')
     try {
       const saved = JSON.parse(raw)
-      setDistillery(saved.distillery || '')
+      const dist  = saved.distillery || ''
+      const yr    = parseInt(saved.fillYear)
+      const cType = saved.caskType || 'Hogshead'
+      const lpaVal = String(saved.lpa || '')
+      setDistillery(dist)
       setFillYear(String(saved.fillYear || ''))
-      setCaskType(saved.caskType || 'Hogshead')
-      setLpa(String(saved.lpa || ''))
-      setResult(saved.result)
-      onResult?.()
+      setCaskType(cType)
+      setLpa(lpaVal)
+      if (dist && !isNaN(yr)) {
+        const r = valueCask({ distillery: dist, fillYear: yr, caskType: cType, lpa: lpaVal ? parseFloat(lpaVal) : (DEFAULT_LPA[cType] ?? 200) })
+        setResult({ ...r, comparables: findComparables(dist, r.tier, r.age) })
+        onResult?.()
+        setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+      }
     } catch {}
-    sessionStorage.removeItem('tbk_restore')
+  }
+
+  // On mount: restore immediately if pendingValuation exists and session is already confirmed
+  useEffect(() => {
+    if (!sessionStorage.getItem('pendingValuation')) return
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) restorePending()
+    })
   }, [])
 
-  // Save current valuation state before navigating away to signup/email confirmation
+  // Save complete valuation state before opening the signup modal
   function openModal(mode) {
-    if (mode === 'create' && result) {
-      sessionStorage.setItem('tbk_restore', JSON.stringify(
+    if (mode === 'create') {
+      sessionStorage.setItem('pendingValuation', JSON.stringify(
         { distillery, fillYear, caskType, lpa, result }
       ))
     }
@@ -430,6 +447,7 @@ export default function CaskValuator({ isMobile, onResult }) {
 
   // Check session on mount, keep in sync across tabs, expose authLoading so
   // GatedContent never flashes the gate before we know the auth state.
+  // On SIGNED_IN (e.g. email confirmed in another tab), restore any pending valuation.
   useEffect(() => {
     const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -439,8 +457,8 @@ export default function CaskValuator({ isMobile, onResult }) {
         } else {
           setSubscription(null)
         }
-        // INITIAL_SESSION fires once on mount — marks auth as resolved
         if (event === 'INITIAL_SESSION') setAuthLoading(false)
+        if (event === 'SIGNED_IN' && sessionStorage.getItem('pendingValuation')) restorePending()
       }
     )
     return () => authListener.unsubscribe()
@@ -615,7 +633,7 @@ export default function CaskValuator({ isMobile, onResult }) {
 
       {/* ── Results ── */}
       {result && (
-        <div>
+        <div ref={resultsRef}>
           {/* Value display — always visible */}
           <div style={{
             paddingTop: 52, paddingBottom: 48,
