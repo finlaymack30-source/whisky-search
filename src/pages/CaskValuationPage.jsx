@@ -14,8 +14,10 @@ const C = {
   border: '#E8E4DC',
 }
 
-const TITLE       = 'Whisky Cask Valuation — The Bottle Keep'
-const DESCRIPTION = 'Independent cask valuation model calibrated to live auction data. Understand what your whisky cask is worth in the current market — 97.9% reserve failure rate, 2.1% clearance. Free to try.'
+const TITLE        = 'Whisky Cask Valuation Tool — Free Estimate | The Bottle Keep'
+const DESCRIPTION  = 'Free whisky cask valuation tool calibrated to live auction data. See what your cask is worth in the current market — 2.1% clearance rate, 97.9% reserve failure. Instant estimate.'
+const DESCRIPTION2 = 'Independent whisky cask valuation tool built on auction data. With a 30% bid–ask gap and only 2.1% of casks clearing at auction in 2026, knowing your cask\'s real market value matters. Free to use.'
+const KEYWORDS     = 'whisky cask valuation, cask auction data, whisky market intelligence, cask clearance rate, whisky investment'
 
 const JSON_LD = JSON.stringify({
   '@context': 'https://schema.org',
@@ -45,12 +47,13 @@ export default function CaskValuationPage() {
       <Helmet>
         <title>{TITLE}</title>
         <meta name="description" content={DESCRIPTION} />
+        <meta name="keywords" content={KEYWORDS} />
         <meta property="og:title" content={TITLE} />
-        <meta property="og:description" content={DESCRIPTION} />
+        <meta property="og:description" content={DESCRIPTION2} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={TITLE} />
-        <meta name="twitter:description" content={DESCRIPTION} />
+        <meta name="twitter:description" content={DESCRIPTION2} />
         <script type="application/ld+json">{JSON_LD}</script>
       </Helmet>
 
