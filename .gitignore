@@ -12,6 +12,21 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+.env.local
+.env.development
+.env.development.local
+.env.production
+.env.production.local
+.env.test
+.env.test.local
+
+# Credential files (never commit)
+SUPABASE_SERVICE_KEY*
+WA_PASSWORD*
+node
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
