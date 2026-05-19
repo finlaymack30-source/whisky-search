@@ -153,12 +153,12 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
             {mode === 'create' ? 'New account' : 'Sign in'}
           </Label>
           <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 400, color: C.dark, marginBottom: 10 }}>
-            {mode === 'create' ? 'Start your free month' : 'Welcome back'}
+            {mode === 'create' ? 'Create your account' : 'Welcome back'}
           </div>
           <div style={{ fontSize: 13, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.6 }}>
             {mode === 'create'
-              ? 'Full access for 30 days. No card required.'
-              : 'Access your account to view the full analysis.'}
+              ? 'Free to use. No card required.'
+              : 'Access your account and saved valuations.'}
           </div>
         </div>
 
@@ -190,7 +190,7 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
             cursor: loading ? 'default' : 'pointer', letterSpacing: '0.2em', textTransform: 'uppercase',
             marginBottom: 20,
           }}>
-            {loading ? 'Please wait…' : mode === 'create' ? 'Create account — start free month' : 'Sign in'}
+            {loading ? 'Please wait…' : mode === 'create' ? 'Create account' : 'Sign in'}
           </button>
 
           <div style={{ textAlign: 'center', fontSize: 12, color: C.muted, fontFamily: SANS, fontWeight: 300 }}>
