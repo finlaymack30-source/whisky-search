@@ -11,9 +11,11 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'No token' }) }
   }
 
+  const SUPABASE_URL = process.env.SUPABASE_URL || 'https://bxqokujhuofblkrzvlke.supabase.co'
+
   // Verify the user's JWT using the service role client
   const supabase = createClient(
-    process.env.SUPABASE_URL,
+    SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )

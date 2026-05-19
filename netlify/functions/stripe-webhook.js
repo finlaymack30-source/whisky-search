@@ -7,12 +7,18 @@ exports.handler = async (event) => {
   }
 
   const stripe = Stripe(process.env.STRIPE_SECRET_KEY)
+  const SUPABASE_URL = process.env.SUPABASE_URL || 'https://bxqokujhuofblkrzvlke.supabase.co'
+
+  // Netlify may base64-encode the body — decode it so Stripe gets the exact raw bytes
+  const rawBody = event.isBase64Encoded
+    ? Buffer.from(event.body, 'base64').toString('utf8')
+    : event.body
 
   // Verify webhook signature
   let stripeEvent
   try {
     stripeEvent = stripe.webhooks.constructEvent(
-      event.body,
+      rawBody,
       event.headers['stripe-signature'],
       process.env.STRIPE_WEBHOOK_SECRET
     )
@@ -22,7 +28,7 @@ exports.handler = async (event) => {
   }
 
   const supabase = createClient(
-    process.env.SUPABASE_URL,
+    SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
