@@ -51,11 +51,20 @@ export default function CaskValuationPage() {
         <meta property="og:title" content={TITLE} />
         <meta property="og:description" content={DESCRIPTION2} />
         <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://www.thebottlekeep.co.uk/logo.svg" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={TITLE} />
         <meta name="twitter:description" content={DESCRIPTION2} />
         <script type="application/ld+json">{JSON_LD}</script>
       </Helmet>
+
+      <h1 style={{
+        position: 'absolute', width: 1, height: 1,
+        padding: 0, margin: -1, overflow: 'hidden',
+        clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0,
+      }}>
+        Whisky Cask Valuation Tool — Independent Market Data
+      </h1>
 
       <section style={{ background: C.bg, minHeight: 'calc(100vh - 92px)', display: 'flex', flexDirection: 'column' }}>
         <div style={{

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#1A1A18"/>
+
+  <!-- Bottle body -->
+  <rect x="230" y="96" width="52" height="36" rx="8" fill="#B8A882"/>
+  <rect x="236" y="132" width="40" height="52" rx="4" fill="#B8A882"/>
+  <path d="M208 184 Q192 224 192 264 L192 368 Q192 400 224 400 L288 400 Q320 400 320 368 L320 264 Q320 224 304 184 Z" fill="#B8A882"/>
+
+  <!-- Liquid level line -->
+  <rect x="196" y="308" width="120" height="56" rx="4" fill="#1A1A18" opacity="0.22"/>
+
+  <!-- Wordmark -->
+  <text
+    x="256" y="452"
+    font-family="Georgia, serif"
+    font-size="28"
+    font-weight="400"
+    letter-spacing="6"
+    text-anchor="middle"
+    fill="#B8A882"
+  >TBK</text>
+</svg>
