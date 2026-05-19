@@ -444,118 +444,12 @@ function AuthModal({ mode, onClose, onSuccess, onSwitchMode }) {
   )
 }
 
-// ─── PaymentModal ─────────────────────────────────────────────────────────────
-
-function PaymentModal({ userId, onClose, onSuccess }) {
-  const [cardNumber, setCardNumber] = useState('')
-  const [expiry, setExpiry]         = useState('')
-  const [cvc, setCvc]               = useState('')
-  const [error, setError]           = useState('')
-  const [loading, setLoading]       = useState(false)
-
-  const fieldInput = {
-    display: 'block', width: '100%', boxSizing: 'border-box',
-    padding: '12px 14px', marginTop: 8,
-    border: `1px solid ${C.borderMid}`, borderRadius: 0,
-    fontSize: 14, fontFamily: MONO, fontWeight: 300,
-    color: C.dark, background: C.white, outline: 'none',
-    letterSpacing: '0.02em',
-  }
-
-  const fieldLabel = {
-    fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase',
-    color: C.stone, fontFamily: SANS, fontWeight: 400,
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
-    if (!cardNumber.replace(/\s/g, '') || !expiry || !cvc) { setError('Please fill in all payment fields.'); return }
-    setLoading(true)
-    try {
-      const paidUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-      const { data, error: dbErr } = await supabase
-        .from('user_subscriptions')
-        .update({ paid_until: paidUntil })
-        .eq('user_id', userId)
-        .select()
-        .single()
-      if (dbErr) { setError('Update failed. Please try again.'); return }
-      onSuccess(data)
-    } catch {
-      setError('Something went wrong. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(26,26,24,0.55)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24,
-      }}
-      onClick={e => e.target === e.currentTarget && onClose()}
-    >
-      <div style={{ background: C.white, border: `1px solid ${C.border}`, padding: '52px 48px', width: '100%', maxWidth: 420, borderRadius: 0 }}>
-        <div style={{ marginBottom: 36 }}>
-          <Label style={{ marginBottom: 14 }}>Subscription</Label>
-          <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 400, color: C.dark, marginBottom: 10 }}>
-            Continue your access
-          </div>
-          <div style={{ fontSize: 13, color: C.muted, fontFamily: SANS, fontWeight: 300 }}>
-            <span style={{ fontFamily: MONO }}>£49</span> per month · Cancel anytime
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 18 }}>
-            <label style={fieldLabel}>Card number</label>
-            <input type="text" value={cardNumber} onChange={e => setCardNumber(e.target.value)} placeholder="1234 5678 9012 3456" maxLength={19} style={fieldInput} autoFocus />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
-            <div>
-              <label style={fieldLabel}>Expiry</label>
-              <input type="text" value={expiry} onChange={e => setExpiry(e.target.value)} placeholder="MM/YY" maxLength={5} style={fieldInput} />
-            </div>
-            <div>
-              <label style={fieldLabel}>CVC</label>
-              <input type="text" value={cvc} onChange={e => setCvc(e.target.value)} placeholder="123" maxLength={4} style={fieldInput} />
-            </div>
-          </div>
-
-          {error && (
-            <div style={{ padding: '11px 14px', marginBottom: 20, background: C.terracottaBg, border: `1px solid ${C.terracottaBorder}`, fontSize: 12, color: C.terracotta, fontFamily: SANS, fontWeight: 300 }}>
-              {error}
-            </div>
-          )}
-
-          <button type="submit" disabled={loading} style={{
-            display: 'block', width: '100%', padding: '14px',
-            background: loading ? C.muted : C.dark, color: '#F5F2EC',
-            border: 'none', borderRadius: 0, fontSize: 10,
-            fontFamily: SANS, fontWeight: 400, cursor: loading ? 'default' : 'pointer',
-            letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 14,
-          }}>
-            {loading ? 'Processing…' : 'Subscribe — £49 / month'}
-          </button>
-
-          <div style={{ fontSize: 10, color: C.muted, fontFamily: SANS, fontWeight: 300, textAlign: 'center', letterSpacing: '0.04em' }}>
-            Payments processed securely via Stripe
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
 
 // ─── GatedContent ─────────────────────────────────────────────────────────────
 // Active/trial sessions: render children fully.
 // Locked: show a clipped, fading preview of the content, then an inline card in page flow.
 
-function GatedContent({ subscription, onOpenModal, isMobile, children }) {
+function GatedContent({ subscription, onOpenModal, onStartCheckout, isMobile, children }) {
   const status = sessionStatus(subscription)
   if (status === 'active' || status === 'trial') return <>{children}</>
 
@@ -575,7 +469,7 @@ function GatedContent({ subscription, onOpenModal, isMobile, children }) {
         }} />
       </div>
 
-      {/* Inline card — in page flow, not a modal overlay */}
+      {/* Inline card */}
       <div style={{
         maxWidth: isMobile ? '100%' : 440,
         margin: isMobile ? '40px 0 0' : '48px auto 0',
@@ -590,7 +484,7 @@ function GatedContent({ subscription, onOpenModal, isMobile, children }) {
           fontFamily: SERIF, fontSize: 22, fontWeight: 400,
           color: C.dark, marginBottom: 12, lineHeight: 1.2,
         }}>
-          {isExpired ? 'Your free month has ended' : 'Unlock the complete valuation'}
+          {isExpired ? 'Your free trial has ended' : 'Unlock full analysis'}
         </div>
 
         <div style={{
@@ -598,12 +492,12 @@ function GatedContent({ subscription, onOpenModal, isMobile, children }) {
           lineHeight: 1.7, marginBottom: 32,
         }}>
           {isExpired
-            ? <>Continue with unlimited cask valuations at <span style={{ fontFamily: MONO }}>£49</span>/month.</>
-            : 'Valuation factors, comparable sales, and methodology. Free for 30 days — no card required.'}
+            ? <>Subscribe to continue at <span style={{ fontFamily: MONO }}>£49</span>/month.</>
+            : <>Free for 30 days, then <span style={{ fontFamily: MONO }}>£49</span>/month. No card required to start.</>}
         </div>
 
         <button
-          onClick={() => onOpenModal(isExpired ? 'payment' : 'create')}
+          onClick={() => isExpired ? onStartCheckout() : onOpenModal('create')}
           style={{
             display: 'block', width: '100%', padding: '10px 16px',
             background: C.dark, color: '#F5F2EC',
@@ -613,20 +507,22 @@ function GatedContent({ subscription, onOpenModal, isMobile, children }) {
             marginBottom: 14,
           }}
         >
-          {isExpired ? 'Continue at £49/month' : 'Create free account'}
+          {isExpired ? 'Subscribe — £49/month' : 'Create free account — no card required'}
         </button>
 
-        <button
-          onClick={() => onOpenModal('signin')}
-          style={{
-            display: 'block', width: '100%',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: C.muted, fontSize: 12, fontFamily: SANS, fontWeight: 300,
-            letterSpacing: '0.02em', textAlign: 'center', padding: 0,
-          }}
-        >
-          Already a member? Sign in
-        </button>
+        {!isExpired && (
+          <button
+            onClick={() => onOpenModal('signin')}
+            style={{
+              display: 'block', width: '100%',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: C.muted, fontSize: 12, fontFamily: SANS, fontWeight: 300,
+              letterSpacing: '0.02em', textAlign: 'center', padding: 0,
+            }}
+          >
+            Already a member? Sign in
+          </button>
+        )}
       </div>
     </div>
   )
@@ -643,7 +539,6 @@ export default function CaskValuator({ isMobile, onResult }) {
   const [suggestions, setSuggestions] = useState([])
   const [showSugg, setShowSugg]     = useState(false)
   const [subscription, setSubscription] = useState(null)
-  const [userId, setUserId]             = useState(null)
   const [modal, setModal]               = useState(null)
   const distRef = useRef(null)
   const suggRef = useRef(null)
@@ -651,22 +546,47 @@ export default function CaskValuator({ isMobile, onResult }) {
   // Restore session on mount and listen for auth changes
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setUserId(session.user.id)
-        setSubscription(await fetchSubscription(session.user.id))
-      }
+      if (session?.user) setSubscription(await fetchSubscription(session.user.id))
     })
     const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(async (_, session) => {
       if (session?.user) {
-        setUserId(session.user.id)
         setSubscription(await fetchSubscription(session.user.id))
       } else {
-        setUserId(null)
         setSubscription(null)
       }
     })
     return () => authListener.unsubscribe()
   }, [])
+
+  // After Stripe Checkout redirect, re-fetch subscription once webhook has processed
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('checkout') !== 'success') return
+    window.history.replaceState({}, '', window.location.pathname)
+    const refetch = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+      setSubscription(await fetchSubscription(session.user.id))
+    }
+    setTimeout(refetch, 2000)
+    setTimeout(refetch, 5000)
+  }, [])
+
+  async function handleStripeCheckout() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setModal('create'); return }
+    try {
+      const res = await fetch('/.netlify/functions/create-checkout-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const { url } = await res.json()
+      window.location.href = url
+    } catch (err) {
+      console.error('Stripe checkout error:', err)
+    }
+  }
 
   useEffect(() => {
     function handler(e) {
@@ -885,7 +805,7 @@ export default function CaskValuator({ isMobile, onResult }) {
           </div>
 
           {/* Gated content */}
-          <GatedContent subscription={subscription} onOpenModal={setModal} isMobile={isMobile}>
+          <GatedContent subscription={subscription} onOpenModal={setModal} onStartCheckout={handleStripeCheckout} isMobile={isMobile}>
 
             {/* Market Position */}
             <div style={{ ...sectionCard, marginBottom: 16 }}>
@@ -1035,13 +955,6 @@ export default function CaskValuator({ isMobile, onResult }) {
           onClose={() => setModal(null)}
           onSuccess={sub => { setSubscription(sub); setModal(null) }}
           onSwitchMode={m => setModal(m)}
-        />
-      )}
-      {modal === 'payment' && (
-        <PaymentModal
-          userId={userId}
-          onClose={() => setModal(null)}
-          onSuccess={sub => { setSubscription(sub); setModal(null) }}
         />
       )}
     </div>
