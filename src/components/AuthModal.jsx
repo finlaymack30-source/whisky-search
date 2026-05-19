@@ -93,7 +93,13 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
       if (mode === 'create') {
         console.log('[auth] calling signUp...')
         const { data, error: authErr } = await Promise.race([
-          supabase.auth.signUp({ email, password }),
+          supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: `${window.location.origin}/cask-valuation`,
+            },
+          }),
           timeout,
         ])
         console.log('[auth] signUp resolved — error:', authErr?.message ?? null)
