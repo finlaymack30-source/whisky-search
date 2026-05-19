@@ -222,6 +222,21 @@ export default function MarketReportPage() {
       {/* Brand stripe */}
       <div style={{ height: 3, background: D.terracotta }} />
 
+      {/* Sample data banner */}
+      <div style={{
+        borderBottom: `1px solid ${D.terracotta}`,
+        padding: '9px 24px',
+        textAlign: 'center',
+        background: D.bg,
+      }}>
+        <span style={{
+          fontFamily: SANS, fontSize: 9, letterSpacing: '0.22em',
+          textTransform: 'uppercase', color: D.terracotta, fontWeight: 400,
+        }}>
+          Sample Report — May 2026 &nbsp;·&nbsp; Full reports available with subscription
+        </span>
+      </div>
+
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <section style={{ background: D.bg, padding: isMobile ? '24px 16px 0' : '32px 48px 0' }}>
 

@@ -31,7 +31,7 @@ function Label({ children, style }) {
   )
 }
 
-export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode }) {
+export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pendingValuation }) {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
@@ -63,6 +63,16 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode }) {
         const { data, error: authErr } = await supabase.auth.signUp({ email, password })
         if (authErr) { setError(authErr.message); return }
         if (!data.session) {
+          // Save valuation inputs to DB so they survive cross-tab confirmation
+          if (pendingValuation?.distillery) {
+            await supabase.from('pending_valuations').upsert({
+              email,
+              distillery: pendingValuation.distillery,
+              fill_year: parseInt(pendingValuation.fillYear) || null,
+              cask_type: pendingValuation.caskType,
+              lpa: pendingValuation.lpa ? parseFloat(pendingValuation.lpa) : null,
+            }, { onConflict: 'email' })
+          }
           setEmailSent(true)
           return
         }

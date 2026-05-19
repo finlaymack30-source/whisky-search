@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { User } from 'lucide-react'
-import { supabase, fetchSubscription } from '../supabase'
+import { supabase } from '../supabase'
 import AuthModal from './AuthModal'
 
 const SANS = "'DM Sans', 'Libre Franklin', system-ui, sans-serif"
@@ -90,22 +89,12 @@ function Ticker({ th }) {
   )
 }
 
-function sessionStatus(sub) {
-  if (!sub) return 'none'
-  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
-  if (sub.paid_until && new Date(sub.paid_until) > new Date()) return 'active'
-  if (Date.now() - new Date(sub.trial_started_at).getTime() < THIRTY_DAYS) return 'trial'
-  return 'expired'
-}
 
 export default function Layout({ children, dark = false }) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
   const [authUser, setAuthUser] = useState(null)
-  const [sub, setSub] = useState(null)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authModalMode, setAuthModalMode] = useState('create')
-  const dropdownRef = useRef(null)
   const location = useLocation()
   const th  = dark ? THEMES.dark : THEMES.light
   const nav = THEMES.light  // navbar always light — consistent brand element
@@ -118,40 +107,16 @@ export default function Layout({ children, dark = false }) {
 
   useEffect(() => {
     const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          setAuthUser(session.user)
-          setSub(await fetchSubscription(session.user.id))
-        } else {
-          setAuthUser(null)
-          setSub(null)
-        }
+      (event, session) => {
+        setAuthUser(session?.user ?? null)
       }
     )
     return () => authListener.unsubscribe()
   }, [])
 
-  useEffect(() => {
-    function handler(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  const status = sessionStatus(sub)
-
-  function trialExpiry() {
-    if (!sub?.trial_started_at) return null
-    const d = new Date(sub.trial_started_at)
-    d.setDate(d.getDate() + 30)
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-  }
-
-  const isCask   = location.pathname === '/cask-valuation'
-  const isMarket = location.pathname === '/market-report'
+  const isCask       = location.pathname === '/cask-valuation'
+  const isMarket     = location.pathname === '/market-report'
+  const isDistillery = location.pathname === '/distillery-index'
 
   const navLink = (active) => ({
     height: 60, padding: isMobile ? '0 12px' : '0 18px',
@@ -185,73 +150,41 @@ export default function Layout({ children, dark = false }) {
         </Link>
 
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Link to="/cask-valuation" style={navLink(isCask)}>Cask valuation</Link>
-          <Link to="/market-report"  style={navLink(isMarket)}>Market report</Link>
+          <Link to="/cask-valuation"   style={navLink(isCask)}>Cask valuation</Link>
+          <Link to="/market-report"    style={navLink(isMarket)}>Market report</Link>
+          <Link to="/distillery-index" style={navLink(isDistillery)}>Distillery index</Link>
 
-          {/* Profile icon */}
-          <div ref={dropdownRef} style={{ position: 'relative', marginLeft: 16, display: 'flex', alignItems: 'center' }}>
-            <button
-              onClick={() => authUser ? setDropdownOpen(o => !o) : (setAuthModalMode('create'), setShowAuthModal(true))}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: 4, position: 'relative',
-              }}
-              aria-label={authUser ? 'Account menu' : 'Sign in'}
-            >
-              <User
-                size={20}
-                strokeWidth={1.5}
-                color={authUser ? nav.navActive : nav.navInactive}
-                style={{ opacity: authUser ? 1 : 0.45 }}
-              />
-              {authUser && (
-                <span style={{
-                  position: 'absolute', bottom: 2, right: 2,
-                  width: 6, height: 6, borderRadius: '50%',
-                  background: '#7A3328',
-                  border: `1.5px solid ${nav.navBg}`,
-                }} />
-              )}
-            </button>
-
-            {dropdownOpen && authUser && (
-              <div style={{
-                position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                background: nav.navBg, border: `1px solid ${nav.navBorder}`,
-                minWidth: 220, zIndex: 300,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-              }}>
-                <div style={{ padding: '14px 16px', borderBottom: `1px solid ${nav.navBorder}` }}>
-                  <div style={{ fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: nav.navInactive, fontFamily: SANS, marginBottom: 4 }}>
-                    {status === 'active' ? 'Subscriber' : status === 'trial' ? 'Free trial' : 'Trial ended'}
-                  </div>
-                  <div style={{ fontSize: 12, fontFamily: MONO, color: nav.navActive, wordBreak: 'break-all' }}>
-                    {authUser.email}
-                  </div>
-                  {status === 'trial' && trialExpiry() && (
-                    <div style={{ fontSize: 10, color: nav.navInactive, fontFamily: SANS, marginTop: 4 }}>
-                      Trial ends {trialExpiry()}
-                    </div>
-                  )}
-                  {status === 'active' && sub?.paid_until && (
-                    <div style={{ fontSize: 10, color: nav.navInactive, fontFamily: SANS, marginTop: 4 }}>
-                      Active until {new Date(sub.paid_until).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </div>
-                  )}
-                </div>
+          {/* Auth links */}
+          <div style={{ display: 'flex', alignItems: 'center', marginLeft: 8, paddingLeft: 16, borderLeft: `1px solid ${nav.navDivider}` }}>
+            {authUser ? (
+              <>
+                <span style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.12em', color: nav.navActive, padding: isMobile ? '0 10px' : '0 14px', whiteSpace: 'nowrap' }}>
+                  {authUser.email.split('@')[0]}
+                </span>
                 <button
-                  onClick={async () => { setDropdownOpen(false); await supabase.auth.signOut() }}
-                  style={{
-                    display: 'block', width: '100%', padding: '12px 16px',
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    textAlign: 'left', fontSize: 11, fontFamily: SANS, fontWeight: 400,
-                    color: nav.navInactive, letterSpacing: '0.04em',
-                  }}
+                  onClick={() => supabase.auth.signOut()}
+                  style={{ height: 60, padding: isMobile ? '0 10px' : '0 14px', display: 'flex', alignItems: 'center', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 400, color: nav.navInactive, background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
                 >
                   Sign out
                 </button>
-              </div>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => { setAuthModalMode('signin'); setShowAuthModal(true) }}
+                  style={{ height: 60, padding: isMobile ? '0 10px' : '0 14px', display: 'flex', alignItems: 'center', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 400, color: nav.navInactive, background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  Sign in
+                </button>
+                {!isMobile && (
+                  <button
+                    onClick={() => { setAuthModalMode('create'); setShowAuthModal(true) }}
+                    style={{ height: 60, padding: '0 14px', display: 'flex', alignItems: 'center', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 400, color: nav.navInactive, background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  >
+                    Create account
+                  </button>
+                )}
+              </>
             )}
           </div>
 

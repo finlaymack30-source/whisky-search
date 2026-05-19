@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import ReactGA from 'react-ga4'
 import CaskValuationPage from './pages/CaskValuationPage'
 import MarketReportPage from './pages/MarketReportPage'
+import DistilleryIndexPage from './pages/DistilleryIndexPage'
 
 ReactGA.initialize('G-7Y0762LEJV')
 
@@ -21,7 +22,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/cask-valuation" replace />} />
         <Route path="/cask-valuation" element={<CaskValuationPage />} />
-        <Route path="/market-report"  element={<MarketReportPage />} />
+        <Route path="/market-report"      element={<MarketReportPage />} />
+        <Route path="/distillery-index"   element={<DistilleryIndexPage />} />
       </Routes>
     </BrowserRouter>
   )

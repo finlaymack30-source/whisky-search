@@ -386,6 +386,79 @@ function GatedContent({ subscription, authLoading, onOpenModal, onStartCheckout,
   )
 }
 
+// ─── RecentFeed ───────────────────────────────────────────────────────────────
+
+const FEED_POOL = [
+  { distillery: 'Springbank',   year: 2008, cask: 'Hogshead'                  },
+  { distillery: 'Glenfarclas',  year: 2012, cask: '1st Fill Sherry Hogshead'  },
+  { distillery: 'Ardbeg',       year: 2015, cask: 'Bourbon Barrel'            },
+  { distillery: 'Dalmore',      year: 2010, cask: 'Sherry Butt'               },
+  { distillery: 'Macallan',     year: 2014, cask: 'Hogshead'                  },
+  { distillery: 'Glen Scotia',  year: 2007, cask: '1st Fill Bourbon Hogshead' },
+  { distillery: 'Bowmore',      year: 2011, cask: 'Hogshead'                  },
+  { distillery: 'GlenAllachie', year: 2013, cask: 'Sherry Hogshead'           },
+  { distillery: 'Tomatin',      year: 2016, cask: 'Refill Bourbon Hogshead'   },
+  { distillery: 'Glengoyne',    year: 2009, cask: 'Sherry Butt'               },
+]
+
+function fmtAge(mins) {
+  if (mins < 1)  return 'just now'
+  if (mins < 60) return `${mins} minute${mins === 1 ? '' : 's'} ago`
+  const hrs = Math.floor(mins / 60)
+  return `${hrs} hour${hrs === 1 ? '' : 's'} ago`
+}
+
+function RecentFeed() {
+  const [entries, setEntries] = useState(() => [
+    { ...FEED_POOL[0], minsAgo: 4  },
+    { ...FEED_POOL[1], minsAgo: 11 },
+    { ...FEED_POOL[2], minsAgo: 23 },
+    { ...FEED_POOL[3], minsAgo: 47 },
+  ])
+  const poolIdx = useRef(4)
+
+  useEffect(() => {
+    const add = setInterval(() => {
+      const item = FEED_POOL[poolIdx.current % FEED_POOL.length]
+      poolIdx.current++
+      setEntries(prev => [{ ...item, minsAgo: 0 }, ...prev.slice(0, 3)])
+    }, 22000)
+    return () => clearInterval(add)
+  }, [])
+
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setEntries(prev => prev.map(e => ({ ...e, minsAgo: e.minsAgo + 1 })))
+    }, 60000)
+    return () => clearInterval(tick)
+  }, [])
+
+  return (
+    <div style={{ marginTop: 28 }}>
+      <style>{`@keyframes tbk-pulse{0%,100%{opacity:1}50%{opacity:0.35}}`}</style>
+      <div style={{ fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.stone, fontFamily: SANS, fontWeight: 400, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
+        <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.green, display: 'inline-block', animation: 'tbk-pulse 2.2s ease-in-out infinite', flexShrink: 0 }} />
+        Recently valued
+      </div>
+      {entries.map((e, i) => (
+        <div key={`${e.distillery}-${e.year}-${i}`} style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+          padding: '9px 0', borderBottom: `1px solid ${C.border}`,
+          opacity: 1 - i * 0.18,
+        }}>
+          <span style={{ fontSize: 12, color: C.ink, fontFamily: SANS, fontWeight: 300 }}>
+            {e.distillery}
+            <span style={{ color: C.muted }}> · {e.year} · {e.cask}</span>
+          </span>
+          <span style={{ fontSize: 11, color: C.muted, fontFamily: MONO, flexShrink: 0, marginLeft: 16 }}>
+            {fmtAge(e.minsAgo)}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ─── CaskValuator ─────────────────────────────────────────────────────────────
 
 export default function CaskValuator({ isMobile, onResult }) {
@@ -403,62 +476,50 @@ export default function CaskValuator({ isMobile, onResult }) {
   const suggRef   = useRef(null)
   const resultsRef = useRef(null)
 
-  // Re-run calculation from saved inputs and populate state, then scroll to results
-  function restorePending() {
-    const raw = sessionStorage.getItem('pendingValuation')
-    if (!raw) return
-    sessionStorage.removeItem('pendingValuation')
-    try {
-      const saved = JSON.parse(raw)
-      const dist  = saved.distillery || ''
-      const yr    = parseInt(saved.fillYear)
-      const cType = saved.caskType || 'Hogshead'
-      const lpaVal = String(saved.lpa || '')
-      setDistillery(dist)
-      setFillYear(String(saved.fillYear || ''))
-      setCaskType(cType)
-      setLpa(lpaVal)
-      if (dist && !isNaN(yr)) {
-        const r = valueCask({ distillery: dist, fillYear: yr, caskType: cType, lpa: lpaVal ? parseFloat(lpaVal) : (DEFAULT_LPA[cType] ?? 200) })
-        setResult({ ...r, comparables: findComparables(dist, r.tier, r.age) })
-        onResult?.()
-        setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
-      }
-    } catch {}
+  // Query DB for saved valuation inputs, recalculate, populate state, scroll to results
+  async function restorePendingFromDB(user) {
+    const { data } = await supabase
+      .from('pending_valuations')
+      .select('*')
+      .eq('email', user.email)
+      .single()
+    if (!data) return
+    await supabase.from('pending_valuations').delete().eq('email', user.email)
+    const dist   = data.distillery || ''
+    const yr     = data.fill_year
+    const cType  = data.cask_type || 'Hogshead'
+    const lpaVal = data.lpa != null ? String(data.lpa) : ''
+    setDistillery(dist)
+    setFillYear(String(yr || ''))
+    setCaskType(cType)
+    setLpa(lpaVal)
+    if (dist && yr) {
+      const r = valueCask({ distillery: dist, fillYear: yr, caskType: cType, lpa: lpaVal ? parseFloat(lpaVal) : (DEFAULT_LPA[cType] ?? 200) })
+      setResult({ ...r, comparables: findComparables(dist, r.tier, r.age) })
+      onResult?.()
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+    }
   }
 
-  // On mount: restore immediately if pendingValuation exists and session is already confirmed
-  useEffect(() => {
-    if (!sessionStorage.getItem('pendingValuation')) return
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) restorePending()
-    })
-  }, [])
-
-  // Save complete valuation state before opening the signup modal
   function openModal(mode) {
-    if (mode === 'create') {
-      sessionStorage.setItem('pendingValuation', JSON.stringify(
-        { distillery, fillYear, caskType, lpa, result }
-      ))
-    }
     setModal(mode)
   }
 
-  // Check session on mount, keep in sync across tabs, expose authLoading so
-  // GatedContent never flashes the gate before we know the auth state.
-  // On SIGNED_IN (e.g. email confirmed in another tab), restore any pending valuation.
+  // Check session on mount, keep in sync across tabs.
+  // Restore pending valuation on INITIAL_SESSION (already signed in) and SIGNED_IN (just confirmed).
   useEffect(() => {
     const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
           const sub = await fetchSubscription(session.user.id)
           setSubscription(sub)
+          if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+            restorePendingFromDB(session.user)
+          }
         } else {
           setSubscription(null)
         }
         if (event === 'INITIAL_SESSION') setAuthLoading(false)
-        if (event === 'SIGNED_IN' && sessionStorage.getItem('pendingValuation')) restorePending()
       }
     )
     return () => authListener.unsubscribe()
@@ -630,6 +691,8 @@ export default function CaskValuator({ isMobile, onResult }) {
           Estimate value
         </button>
       </form>
+
+      {!result && <RecentFeed />}
 
       {/* ── Results ── */}
       {result && (
@@ -861,6 +924,7 @@ export default function CaskValuator({ isMobile, onResult }) {
           onClose={() => setModal(null)}
           onSuccess={sub => { setSubscription(sub); setModal(null) }}
           onSwitchMode={m => setModal(m)}
+          pendingValuation={modal === 'create' ? { distillery, fillYear, caskType, lpa } : null}
         />
       )}
     </div>

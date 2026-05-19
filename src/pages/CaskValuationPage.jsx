@@ -86,7 +86,7 @@ export default function CaskValuationPage() {
                 fontSize: isMobile ? 38 : 48,
                 fontWeight: 500, lineHeight: 1.05,
                 color: C.dark, letterSpacing: '-0.01em',
-                marginBottom: 32, hyphens: 'none',
+                marginBottom: 16, hyphens: 'none',
                 whiteSpace: isMobile ? 'normal' : 'nowrap',
               }}>
                 What is my cask worth?
