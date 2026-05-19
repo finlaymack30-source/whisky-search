@@ -36,9 +36,7 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
-  const [emailSent, setEmailSent]         = useState(false)
-  const [confirmLoading, setConfirmLoading] = useState(false)
-  const [confirmError, setConfirmError]     = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
 
   useEffect(() => {
     const url = import.meta.env.VITE_SUPABASE_URL
@@ -46,19 +44,6 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
     console.log('[auth] VITE_SUPABASE_URL:', url ?? 'UNDEFINED')
     console.log('[auth] VITE_SUPABASE_ANON_KEY:', key ? `${key.slice(0, 20)}…` : 'UNDEFINED')
   }, [])
-
-  // When waiting for email confirmation, listen for cross-tab SIGNED_IN.
-  // Supabase syncs session via BroadcastChannel/localStorage when the user
-  // confirms in another tab — this fires onSuccess() without any manual click.
-  useEffect(() => {
-    if (!emailSent) return
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-        onSuccess()
-      }
-    })
-    return () => subscription.unsubscribe()
-  }, [emailSent])
 
   const fieldInput = {
     display: 'block', width: '100%', boxSizing: 'border-box',
@@ -72,23 +57,6 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
   const fieldLabel = {
     fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase',
     color: C.stone, fontFamily: SANS, fontWeight: 400,
-  }
-
-  async function handleConfirmCheck() {
-    setConfirmLoading(true)
-    setConfirmError(false)
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        onSuccess()
-      } else {
-        setConfirmError(true)
-      }
-    } catch {
-      setConfirmError(true)
-    } finally {
-      setConfirmLoading(false)
-    }
   }
 
   async function handleSubmit(e) {
@@ -166,28 +134,17 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
             Click the link to activate your account, then come back and sign in.
           </div>
           <button
-            onClick={handleConfirmCheck}
-            disabled={confirmLoading}
+            onClick={() => onSwitchMode('signin')}
             style={{
               display: 'block', width: '100%', padding: '14px',
-              background: confirmLoading ? C.muted : C.dark, color: '#F5F2EC',
+              background: C.dark, color: '#F5F2EC',
               border: 'none', borderRadius: 0, fontSize: 10,
-              fontFamily: SANS, fontWeight: 400,
-              cursor: confirmLoading ? 'default' : 'pointer',
-              letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12,
+              fontFamily: SANS, fontWeight: 400, cursor: 'pointer',
+              letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 20,
             }}
           >
-            {confirmLoading ? 'Checking…' : "I've confirmed my email — sign me in"}
+            Sign in
           </button>
-          {confirmError && (
-            <div style={{
-              padding: '10px 14px', marginBottom: 8,
-              background: C.terracottaBg, border: `1px solid ${C.terracottaBorder}`,
-              fontSize: 12, color: C.terracotta, fontFamily: SANS, fontWeight: 300,
-            }}>
-              Please confirm your email first.
-            </div>
-          )}
           <div style={{ textAlign: 'center', fontSize: 12, color: C.muted, fontFamily: SANS, fontWeight: 300 }}>
             Didn't receive it?{' '}
             <button
