@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase, fetchSubscription } from '../supabase'
+import { supabase } from '../supabase'
 
 const SERIF = "'Cormorant Garamond', 'Playfair Display', Georgia, serif"
 const SANS  = "'DM Sans', 'Libre Franklin', system-ui, sans-serif"
@@ -58,37 +58,26 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
     if (!email.includes('@')) { setError('Please enter a valid email address.'); return }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
     setLoading(true)
+    // Safety net: if auth hangs for any reason, reload rather than stay stuck
+    const reloadTimer = setTimeout(() => window.location.reload(), 3000)
     try {
       if (mode === 'create') {
         const { data, error: authErr } = await supabase.auth.signUp({ email, password })
         if (authErr) { setError(authErr.message); return }
         if (!data.session) {
-          // Save valuation inputs to DB so they survive cross-tab confirmation
-          if (pendingValuation?.distillery) {
-            await supabase.from('pending_valuations').upsert({
-              email,
-              distillery: pendingValuation.distillery,
-              fill_year: parseInt(pendingValuation.fillYear) || null,
-              cask_type: pendingValuation.caskType,
-              lpa: pendingValuation.lpa ? parseFloat(pendingValuation.lpa) : null,
-            }, { onConflict: 'email' })
-          }
           setEmailSent(true)
           return
         }
-        await supabase.from('user_subscriptions')
-          .upsert({ user_id: data.user.id }, { onConflict: 'user_id', ignoreDuplicates: true })
-        onSuccess(await fetchSubscription(data.user.id))
+        onSuccess()
       } else {
         const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password })
         if (authErr) { setError(authErr.message); return }
-        await supabase.from('user_subscriptions')
-          .upsert({ user_id: data.user.id }, { onConflict: 'user_id', ignoreDuplicates: true })
-        onSuccess(await fetchSubscription(data.user.id))
+        onSuccess()
       }
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
+      clearTimeout(reloadTimer)
       setLoading(false)
     }
   }
