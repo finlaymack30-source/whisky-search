@@ -106,7 +106,7 @@ export default function CaskValuationPage() {
                     label: 'Bid–Ask Gap',
                     value: '30%',
                     valueColor: C.dark,
-                    descriptor: 'Buyer willingness versus seller expectation, May 2026',
+                    descriptor: 'Buyer willingness versus seller expectation, Nov 2026',
                   },
                   {
                     label: 'Clearance Rate',

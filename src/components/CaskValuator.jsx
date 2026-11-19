@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../supabase'
+import MethodologyModal from './MethodologyModal'
 import {
   valueCask, findComparables, getTier, getBeautyScore,
   KNOWN_DISTILLERIES, ageMultiplier, caskTypeMultiplier,
   beautyContestPremium, gaussianCopulaFactor,
+  COPULA_RHO, MODEL_VALIDATION,
 } from '../lib/caskValuation'
 
 const SERIF = "'Cormorant Garamond', 'Playfair Display', Georgia, serif"
@@ -158,7 +160,7 @@ function ConvergenceChart({ peakLpa, sellerExpLpa, buyerLpa, decayRate, capitula
   const PL = 54, PR = 18, PT = 22, PB = 36
   const CW = W - PL - PR, CH = H - PT - PB
 
-  const PAST = 28
+  const PAST = 34
   const futureDisplay = Math.min(capitulationMonths > 0 ? capitulationMonths + 14 : 38, 52)
   const total = PAST + futureDisplay
 
@@ -205,7 +207,7 @@ function ConvergenceChart({ peakLpa, sellerExpLpa, buyerLpa, decayRate, capitula
   })
   xDates.push({ x: nowX, label: 'Now' })
   if (convX) {
-    const d = new Date(2026, 4, 1)
+    const d = new Date(2026, 10, 1)
     d.setMonth(d.getMonth() + capitulationMonths)
     xDates.push({ x: convX, label: d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }) })
   }
@@ -265,13 +267,22 @@ function ComparableRow({ comp, isLast }) {
       borderBottom: isLast ? 'none' : `1px solid ${C.border}`,
     }}>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 400, color: C.dark, fontFamily: SANS }}>{comp.distillery}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 400, color: C.dark, fontFamily: SANS }}>{comp.distillery}</span>
+          {comp.sold === false && (
+            <span style={{
+              fontSize: 8, fontFamily: MONO, letterSpacing: '0.06em',
+              color: C.muted, border: `1px solid ${C.borderMid}`,
+              borderRadius: 2, padding: '1px 4px', lineHeight: 1,
+            }}>RNM</span>
+          )}
+        </div>
         <div style={{ fontSize: 11, color: C.muted, fontFamily: SANS, fontWeight: 300, marginTop: 2 }}>{comp.age}yr · {comp.type}</div>
       </div>
       <div style={{ fontSize: 11, fontFamily: MONO, fontWeight: 400, color: C.dark, textAlign: 'right' }}>
         {comp.lpaPer ? `£${comp.lpaPer}/LPA` : '—'}
       </div>
-      <div style={{ fontSize: 11, fontFamily: MONO, fontWeight: 400, color: C.dark, textAlign: 'right' }}>
+      <div style={{ fontSize: 11, fontFamily: MONO, fontWeight: 400, color: comp.sold === false ? C.muted : C.dark, textAlign: 'right' }}>
         {fmt(comp.total)}
       </div>
       <div style={{ textAlign: 'right' }}>
@@ -371,8 +382,9 @@ export default function CaskValuator({ isMobile, onResult }) {
   const [result, setResult]           = useState(null)
   const [suggestions, setSuggestions] = useState([])
   const [showSugg, setShowSugg]       = useState(false)
-  const [mailEmail, setMailEmail]     = useState('')
-  const [mailDone, setMailDone]       = useState(false)
+  const [mailEmail, setMailEmail]         = useState('')
+  const [mailDone, setMailDone]           = useState(false)
+  const [showMethodology, setShowMethodology] = useState(false)
   const distRef = useRef(null)
   const suggRef = useRef(null)
 
@@ -408,7 +420,7 @@ export default function CaskValuator({ isMobile, onResult }) {
     const yr = parseInt(fillYear)
     if (isNaN(yr) || yr < 1960 || yr > 2026) return
     const r = valueCask({ distillery, fillYear: yr, caskType, lpa: lpa ? parseFloat(lpa) : (DEFAULT_LPA[caskType] ?? 200) })
-    const comps = findComparables(distillery, r.tier, r.age)
+    const comps = findComparables(distillery, r.tier, r.age, caskType)
     setResult({ ...r, comparables: comps })
     onResult?.()
   }
@@ -532,7 +544,7 @@ export default function CaskValuator({ isMobile, onResult }) {
             marginTop: 52, marginBottom: 48,
           }}>
             <Label style={{ marginBottom: 32 }}>
-              Estimated achievable — current market, May 2026
+              Estimated achievable — current market, Nov 2026
             </Label>
 
             <div style={{
@@ -643,7 +655,7 @@ export default function CaskValuator({ isMobile, onResult }) {
                 note={`${fmtLpa(result.fundamentalLpa)}/LPA`}
               />
               <FactorBar
-                label="Copula amplification (ρ = 0.72, age×rep)"
+                label={`Student-t copula (ρ = ${COPULA_RHO.toFixed(2)}, age×rep)`}
                 value={(result.copulaFactor - 1) * result.fundamentalLpa}
                 maxValue={Math.max(result.p80Lpa, result.fundamentalLpa) * 1.1}
                 color={C.stone}
@@ -725,7 +737,7 @@ export default function CaskValuator({ isMobile, onResult }) {
             </div>
             {mailDone ? (
               <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 400, color: C.dark, fontStyle: 'italic' }}>
-                You'll receive the June 2026 briefing.
+                You'll receive the December 2026 briefing.
               </div>
             ) : (
               <>
@@ -760,15 +772,29 @@ export default function CaskValuator({ isMobile, onResult }) {
           <div style={{ padding: '20px 0', borderTop: `1px solid ${C.border}` }}>
             <div style={{ fontSize: 11, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.75 }}>
               <span style={{ color: C.ink, fontWeight: 400 }}>Methodology:</span>{' '}
-              Fundamental value is derived from base £/LPA rates calibrated from{' '}
-              {result.comparables?.length > 0 ? 'recent sold data' : 'tier and region benchmarks'}, scaled
-              by age and cask type. A bivariate Gaussian copula (ρ = 0.72) captures the
-              superlinear premium when age and distillery reputation are jointly high.
-              The Keynesian beauty contest component models reflexive sentiment premium,
-              compressed from its bull-market maximum by the current 97.9% reserve failure rate.
-              Not investment advice. Confidence: {result.confidence}. Range ±<span style={{ fontFamily: MONO }}>{result.uncertainty}%</span>.
+              Fundamental value uses tier-calibrated base rates scaled by age and cask type,{' '}
+              {result.anchorN > 0
+                ? <>blended with an age-normalised anchor from <span style={{ fontFamily: MONO }}>{result.anchorN}</span> comparable sold lot{result.anchorN !== 1 ? 's' : ''} (<span style={{ fontFamily: MONO }}>{result.dataWeight}%</span> data weight).</>
+                : 'with no comparable sales found to anchor against.'
+              }{' '}
+              A Student-t copula (ρ = {COPULA_RHO.toFixed(2)}, ν = 4, MLE-estimated) captures the superlinear premium when age
+              and distillery reputation are jointly high. The Keynesian beauty contest component
+              models reflexive sentiment premium, compressed by the current 97.9% reserve failure rate.
+              5-fold CV formula MAE: £{MODEL_VALIDATION.formula.mae}/LPA.
+              Not investment advice. Confidence: {result.confidence}. Range ±<span style={{ fontFamily: MONO }}>{result.uncertainty}%</span>.{' '}
+              <button
+                onClick={() => setShowMethodology(true)}
+                style={{
+                  background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                  fontFamily: SANS, fontSize: 11, fontWeight: 400, color: C.stone,
+                  textDecoration: 'underline', textDecorationColor: C.borderMid,
+                  textUnderlineOffset: 2,
+                }}
+              >Full methodology →</button>
             </div>
           </div>
+
+          {showMethodology && <MethodologyModal onClose={() => setShowMethodology(false)} />}
         </div>
       )}
     </div>

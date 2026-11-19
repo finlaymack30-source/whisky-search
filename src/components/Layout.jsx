@@ -49,7 +49,7 @@ const TICKER_ITEMS = [
   { label: '2026 Clearance Rate', value: '2.1%',     accent: true  },
   { label: 'Reserve Failure',     value: '97.9%',    accent: true  },
   { label: 'Bid–Ask Gap',         value: '30%',      accent: true  },
-  { label: 'Model Updated',       value: 'May 2026', accent: false },
+  { label: 'Model Updated',       value: 'Nov 2026', accent: false },
   { label: 'Casks Tracked',       value: '847',      accent: false },
 ]
 
@@ -212,9 +212,7 @@ export default function Layout({ children, dark = false }) {
     return () => authListener.unsubscribe()
   }, [])
 
-  const isCask       = location.pathname === '/cask-valuation'
-  const isMarket     = location.pathname === '/market-report'
-  const isDistillery = location.pathname === '/distillery-index'
+  const isCask = location.pathname === '/cask-valuation'
 
   const navLink = (active) => ({
     height: 60, padding: isMobile ? '0 12px' : '0 18px',
@@ -249,8 +247,6 @@ export default function Layout({ children, dark = false }) {
 
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <Link to="/cask-valuation"   style={navLink(isCask)}>Cask valuation</Link>
-          <Link to="/market-report"    style={navLink(isMarket)}>Market report</Link>
-          <Link to="/distillery-index" style={navLink(isDistillery)}>Distillery index</Link>
 
           {/* Auth links */}
           <div style={{ display: 'flex', alignItems: 'center', marginLeft: 8, paddingLeft: 16, borderLeft: `1px solid ${nav.navDivider}` }}>
@@ -328,10 +324,6 @@ export default function Layout({ children, dark = false }) {
 
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 11, color: '#6B6B68', fontFamily: SANS }}>
             <Link to="/cask-valuation" style={{ color: '#6B6B68', textDecoration: 'none', letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: 11 }}>Cask Valuation</Link>
-            <span style={{ opacity: 0.5 }}>·</span>
-            <Link to="/market-report"  style={{ color: '#6B6B68', textDecoration: 'none', letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: 11 }}>Market Report</Link>
-            <span style={{ opacity: 0.5 }}>·</span>
-            <Link to="/distillery-index" style={{ color: '#6B6B68', textDecoration: 'none', letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: 11 }}>Distillery Index</Link>
           </div>
 
           <div style={{ fontSize: 11, color: '#6B6B68', fontFamily: SANS, fontWeight: 400 }}>

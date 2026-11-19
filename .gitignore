@@ -27,6 +27,12 @@ SUPABASE_SERVICE_KEY*
 WA_PASSWORD*
 node
 
+# Scraper runtime state
+scripts/.wa-progress.json
+scripts/.twe-progress.json
+scripts/.wa-debug-*
+whisky_data.db
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
