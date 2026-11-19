@@ -69,17 +69,25 @@ export default function CaskValuationPage() {
       <section style={{ background: C.bg, minHeight: 'calc(100vh - 92px)' }}>
         <div style={{
           maxWidth: 680,
-          padding: isMobile ? '40px 24px 80px' : '56px 48px 100px',
+          margin: '0 auto',
+          padding: isMobile ? '40px 24px 0' : '56px 48px 0',
         }}>
           <h1 style={{
             fontFamily: "'Freight Display Pro', 'Freight Display', Canela, Georgia, serif",
             fontSize: isMobile ? 38 : 48,
             fontWeight: 500, lineHeight: 1.05,
             color: C.dark, letterSpacing: '-0.01em',
-            marginBottom: 16, hyphens: 'none',
+            marginBottom: 12, hyphens: 'none',
+            textAlign: 'center',
           }}>
             What is my cask worth?
           </h1>
+          <p style={{
+            fontSize: 15, color: '#6B6B68', fontFamily: SANS, fontWeight: 300,
+            lineHeight: 1.5, margin: '0 0 32px', textAlign: 'center',
+          }}>
+            An independent estimate based on live auction clearance data. Free, 30 seconds, no account needed.
+          </p>
           <CaskValuator isMobile={isMobile} />
         </div>
       </section>

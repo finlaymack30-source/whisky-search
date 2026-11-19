@@ -58,13 +58,13 @@ function TickerSet({ prefix, th }) {
     <span key={`${prefix}${i}`} style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
       <span style={{
         fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em',
-        textTransform: 'uppercase', color: th.tickerLabel, whiteSpace: 'nowrap',
+        textTransform: 'uppercase', color: '#6B6B68', whiteSpace: 'nowrap',
       }}>
         {item.label}&ensp;—&ensp;
       </span>
       <span style={{
-        fontFamily: MONO, fontSize: 11, fontWeight: 400,
-        color: item.accent ? th.tickerAccent : th.tickerVal,
+        fontFamily: MONO, fontSize: 10, fontWeight: 400,
+        color: th.tickerAccent,
         letterSpacing: '0.04em', whiteSpace: 'nowrap',
       }}>
         {item.value}
@@ -80,7 +80,7 @@ function Ticker({ th }) {
       <style>{`@keyframes tbk-ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}`}</style>
       <div style={{
         display: 'inline-flex', alignItems: 'center', height: '100%',
-        animation: 'tbk-ticker 80s linear infinite',
+        animation: 'tbk-ticker 112s linear infinite',
         willChange: 'transform',
       }}>
         <TickerSet prefix="a" th={th} />

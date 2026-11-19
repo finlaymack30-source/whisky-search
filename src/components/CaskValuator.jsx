@@ -299,76 +299,6 @@ function ComparableRow({ comp, isLast }) {
 
 // ─── RecentFeed ───────────────────────────────────────────────────────────────
 
-const FEED_POOL = [
-  { distillery: 'Springbank',   year: 2008, cask: 'Hogshead'                  },
-  { distillery: 'Glenfarclas',  year: 2012, cask: '1st Fill Sherry Hogshead'  },
-  { distillery: 'Ardbeg',       year: 2015, cask: 'Bourbon Barrel'            },
-  { distillery: 'Dalmore',      year: 2010, cask: 'Sherry Butt'               },
-  { distillery: 'Macallan',     year: 2014, cask: 'Hogshead'                  },
-  { distillery: 'Glen Scotia',  year: 2007, cask: '1st Fill Bourbon Hogshead' },
-  { distillery: 'Bowmore',      year: 2011, cask: 'Hogshead'                  },
-  { distillery: 'GlenAllachie', year: 2013, cask: 'Sherry Hogshead'           },
-  { distillery: 'Tomatin',      year: 2016, cask: 'Refill Bourbon Hogshead'   },
-  { distillery: 'Glengoyne',    year: 2009, cask: 'Sherry Butt'               },
-]
-
-function fmtAge(mins) {
-  if (mins < 1)  return 'just now'
-  if (mins < 60) return `${mins} minute${mins === 1 ? '' : 's'} ago`
-  const hrs = Math.floor(mins / 60)
-  return `${hrs} hour${hrs === 1 ? '' : 's'} ago`
-}
-
-function RecentFeed() {
-  const [entries, setEntries] = useState(() => [
-    { ...FEED_POOL[0], minsAgo: 4  },
-    { ...FEED_POOL[1], minsAgo: 11 },
-    { ...FEED_POOL[2], minsAgo: 23 },
-    { ...FEED_POOL[3], minsAgo: 47 },
-  ])
-  const poolIdx = useRef(4)
-
-  useEffect(() => {
-    const add = setInterval(() => {
-      const item = FEED_POOL[poolIdx.current % FEED_POOL.length]
-      poolIdx.current++
-      setEntries(prev => [{ ...item, minsAgo: 0 }, ...prev.slice(0, 3)])
-    }, 157000)
-    return () => clearInterval(add)
-  }, [])
-
-  useEffect(() => {
-    const tick = setInterval(() => {
-      setEntries(prev => prev.map(e => ({ ...e, minsAgo: e.minsAgo + 1 })))
-    }, 60000)
-    return () => clearInterval(tick)
-  }, [])
-
-  return (
-    <div style={{ marginTop: 28 }}>
-      <style>{`@keyframes tbk-pulse{0%,100%{opacity:1}50%{opacity:0.35}}`}</style>
-      <div style={{ fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.stone, fontFamily: SANS, fontWeight: 400, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
-        <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.green, display: 'inline-block', animation: 'tbk-pulse 2.2s ease-in-out infinite', flexShrink: 0 }} />
-        Recently valued
-      </div>
-      {entries.map((e, i) => (
-        <div key={`${e.distillery}-${e.year}-${i}`} style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-          padding: '9px 0', borderBottom: `1px solid ${C.border}`,
-          opacity: 1 - i * 0.18,
-        }}>
-          <span style={{ fontSize: 12, color: C.ink, fontFamily: SANS, fontWeight: 300 }}>
-            {e.distillery}
-            <span style={{ color: C.muted }}> · {e.year} · {e.cask}</span>
-          </span>
-          <span style={{ fontSize: 11, color: C.muted, fontFamily: MONO, flexShrink: 0, marginLeft: 16 }}>
-            {fmtAge(e.minsAgo)}
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 // ─── CaskValuator ─────────────────────────────────────────────────────────────
 
@@ -431,16 +361,16 @@ export default function CaskValuator({ isMobile, onResult }) {
   }
 
   const inputStyle = {
-    width: '100%', boxSizing: 'border-box', padding: '12px 14px',
-    border: `1px solid ${C.borderMid}`, borderRadius: 0,
+    width: '100%', boxSizing: 'border-box', height: 52, padding: '0 14px',
+    border: '1px solid #D9D4C8', borderRadius: 0,
     fontSize: 14, fontFamily: SANS, fontWeight: 300,
     color: C.dark, background: C.white, outline: 'none',
     letterSpacing: '0.01em',
   }
 
   const labelStyle = {
-    display: 'block', fontSize: 8, letterSpacing: '0.2em',
-    textTransform: 'uppercase', color: C.stone,
+    display: 'block', fontSize: 11, letterSpacing: '0.12em',
+    textTransform: 'uppercase', color: '#6B6B68',
     fontFamily: SANS, fontWeight: 400, marginBottom: 8,
   }
 
@@ -452,8 +382,12 @@ export default function CaskValuator({ isMobile, onResult }) {
   }
 
   return (
-    <div>
-      <style>{`.tbk-field::placeholder { color: rgba(74,69,64,0.45); }`}</style>
+    <div style={{ paddingBottom: 96 }}>
+      <style>{`
+        .tbk-field::placeholder { color: rgba(74,69,64,0.65); }
+        .tbk-field:focus { border-color: #9A9080 !important; }
+        .tbk-submit:hover { background: #8B3A2A !important; }
+      `}</style>
 
       {/* ── Form ── */}
       <form onSubmit={onSubmit}>
@@ -465,7 +399,7 @@ export default function CaskValuator({ isMobile, onResult }) {
               onChange={e => onDistilleryChange(e.target.value)}
               onFocus={() => distillery.length >= 2 && setShowSugg(suggestions.length > 0)}
               placeholder="e.g. Springbank"
-              style={{ ...inputStyle, padding: '15px 16px', fontSize: 15 }}
+              style={{ ...inputStyle, padding: '0 16px', fontSize: 15 }}
               className="tbk-field"
               autoComplete="off"
             />
@@ -518,32 +452,50 @@ export default function CaskValuator({ isMobile, onResult }) {
           </div>
         </div>
 
-        <button type="submit" style={{
-          display: 'block', width: '100%', padding: '14px',
+        <button type="submit" className="tbk-submit" style={{
+          display: 'block', width: '100%', height: 56,
           background: C.dark, color: '#F5F2EC',
           border: 'none', borderRadius: 0,
           fontSize: 10, fontFamily: SANS, fontWeight: 400,
           cursor: 'pointer', letterSpacing: '0.2em', textTransform: 'uppercase',
+          transition: 'background 0.15s',
         }}>
-          Estimate value
+          Value my cask
         </button>
-        <div style={{ marginTop: 10, textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={() => setShowMethodology(true)}
-            style={{
-              background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-              fontFamily: SANS, fontSize: 11, fontWeight: 300, color: C.muted,
-              textDecoration: 'underline', textDecorationColor: C.border,
-              textUnderlineOffset: 2,
-            }}
-          >
-            How is this calculated?
-          </button>
+        <div style={{ marginTop: 10, textAlign: 'center', fontSize: 12, color: '#6B6B68', fontFamily: SANS, fontWeight: 300 }}>
+          Free · No account required
         </div>
       </form>
 
-      {!result && <RecentFeed />}
+      {!result && (
+        <div style={{
+          marginTop: 28,
+          border: `1px solid ${C.border}`,
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr',
+        }}>
+          {[
+            '1 — Enter your cask',
+            '2 — See your estimated range',
+            '3 — See how the market treats your distillery',
+          ].map((step, i) => (
+            <div key={i} style={{
+              padding: '14px 16px',
+              fontSize: 12,
+              fontVariant: 'small-caps',
+              letterSpacing: '0.06em',
+              color: C.muted,
+              fontFamily: SANS,
+              fontWeight: 400,
+              textAlign: 'center',
+              borderRight: !isMobile && i < 2 ? `1px solid ${C.border}` : 'none',
+              borderBottom: isMobile && i < 2 ? `1px solid ${C.border}` : 'none',
+            }}>
+              {step}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Results ── */}
       {result && (
@@ -778,6 +730,20 @@ export default function CaskValuator({ isMobile, onResult }) {
                 </form>
               </>
             )}
+          </div>
+
+          <div style={{ paddingTop: 20, textAlign: 'center' }}>
+            <button
+              onClick={() => setShowMethodology(true)}
+              style={{
+                background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                fontFamily: SANS, fontSize: 12, fontWeight: 300, color: '#6B6B68',
+                textDecoration: 'underline', textDecorationColor: C.border,
+                textUnderlineOffset: 2,
+              }}
+            >
+              How is this calculated?
+            </button>
           </div>
 
           {showMethodology && <MethodologyModal onClose={() => setShowMethodology(false)} />}
