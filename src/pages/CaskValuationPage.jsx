@@ -33,8 +33,7 @@ const JSON_LD = JSON.stringify({
 })
 
 export default function CaskValuationPage() {
-  const [isMobile, setIsMobile]             = useState(() => window.innerWidth < 768)
-  const [caskHasResult, setCaskHasResult]   = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768)
@@ -67,87 +66,21 @@ export default function CaskValuationPage() {
         Whisky Cask Valuation Tool — Independent Market Data
       </h1>
 
-      <section style={{ background: C.bg, minHeight: 'calc(100vh - 92px)', display: 'flex', flexDirection: 'column' }}>
+      <section style={{ background: C.bg, minHeight: 'calc(100vh - 92px)' }}>
         <div style={{
+          maxWidth: 680,
           padding: isMobile ? '40px 24px 80px' : '56px 48px 100px',
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
         }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: (caskHasResult || isMobile) ? '1fr' : '11fr 9fr',
-            gap: (caskHasResult || isMobile) ? 0 : 52,
-            alignItems: 'start',
-            flex: 1,
+          <h1 style={{
+            fontFamily: "'Freight Display Pro', 'Freight Display', Canela, Georgia, serif",
+            fontSize: isMobile ? 38 : 48,
+            fontWeight: 500, lineHeight: 1.05,
+            color: C.dark, letterSpacing: '-0.01em',
+            marginBottom: 16, hyphens: 'none',
           }}>
-            <div>
-              <h1 style={{
-                fontFamily: "'Freight Display Pro', 'Freight Display', Canela, Georgia, serif",
-                fontSize: isMobile ? 38 : 48,
-                fontWeight: 500, lineHeight: 1.05,
-                color: C.dark, letterSpacing: '-0.01em',
-                marginBottom: 16, hyphens: 'none',
-                whiteSpace: isMobile ? 'normal' : 'nowrap',
-              }}>
-                What is my cask worth?
-              </h1>
-              <CaskValuator isMobile={isMobile} onResult={() => setCaskHasResult(true)} />
-            </div>
-
-            {!caskHasResult && (
-              <div style={{
-                paddingLeft: isMobile ? 0 : 56,
-                marginTop: isMobile ? 40 : 0,
-                borderTop: isMobile ? `1px solid ${C.border}` : 'none',
-              }}>
-                {[
-                  {
-                    label: 'Bid–Ask Gap',
-                    value: '30%',
-                    valueColor: C.dark,
-                    descriptor: 'Buyer willingness versus seller expectation, Nov 2026',
-                  },
-                  {
-                    label: 'Clearance Rate',
-                    value: '2.1%',
-                    valueColor: C.dark,
-                    descriptor: 'Casks finding a buyer at auction, YTD 2026',
-                  },
-                  {
-                    label: 'Market Status',
-                    value: 'Critical',
-                    valueColor: '#724230',
-                    descriptor: 'Deteriorating since Q3 2023',
-                  },
-                ].map((stat) => (
-                  <div key={stat.label} style={{ padding: '20px 0', borderBottom: `1px solid ${C.border}` }}>
-                    <div style={{
-                      fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase',
-                      fontFamily: SANS, color: C.stone, fontWeight: 400, marginBottom: 10,
-                    }}>
-                      {stat.label}
-                    </div>
-                    <div style={{
-                      fontFamily: "'DM Mono', 'IBM Plex Mono', monospace",
-                      fontSize: 44, fontWeight: 400,
-                      color: stat.valueColor, lineHeight: 1,
-                      letterSpacing: 0, marginBottom: 6,
-                    }}>
-                      {stat.value}
-                    </div>
-                    <div style={{
-                      fontSize: 11, fontFamily: SANS, fontWeight: 300,
-                      color: C.muted, lineHeight: 1.45,
-                    }}>
-                      {stat.descriptor}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
+            What is my cask worth?
+          </h1>
+          <CaskValuator isMobile={isMobile} />
         </div>
       </section>
     </Layout>
