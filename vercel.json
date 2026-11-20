@@ -1,9 +1,8 @@
 {
-  "rewrites": [
-    { "source": "/",                   "destination": "/index.html" },
-    { "source": "/cask-valuation",     "destination": "/cask-valuation/index.html" },
-    { "source": "/what-is-lpa",        "destination": "/what-is-lpa/index.html" }
-  ],
+  "installCommand": "pnpm install",
+  "buildCommand":   "pnpm run build",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/assets/(.*)",
