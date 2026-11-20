@@ -59,14 +59,6 @@ export default function CaskValuationPage() {
         <link rel="canonical" href="https://www.thebottlekeep.co.uk/cask-valuation" />
       </Helmet>
 
-      <h1 style={{
-        position: 'absolute', width: 1, height: 1,
-        padding: 0, margin: -1, overflow: 'hidden',
-        clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0,
-      }}>
-        Whisky Cask Valuation Tool — Independent Market Data
-      </h1>
-
       <section style={{ background: C.bg, minHeight: 'calc(100vh - 92px)' }}>
         <div style={{
           maxWidth: 680,
