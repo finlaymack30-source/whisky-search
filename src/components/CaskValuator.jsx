@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import { supabase } from '../supabase'
 import MethodologyModal from './MethodologyModal'
 import {
   valueCask, findComparables,
@@ -297,9 +296,6 @@ function ComparableRow({ comp, isLast }) {
   )
 }
 
-// ─── RecentFeed ───────────────────────────────────────────────────────────────
-
-
 // ─── CaskValuator ─────────────────────────────────────────────────────────────
 
 export default function CaskValuator({ isMobile, onResult }) {
@@ -311,8 +307,6 @@ export default function CaskValuator({ isMobile, onResult }) {
   const [suggestions, setSuggestions] = useState([])
   const [showSugg, setShowSugg]       = useState(false)
   const [lpaError, setLpaError]           = useState('')
-  const [mailEmail, setMailEmail]         = useState('')
-  const [mailDone, setMailDone]           = useState(false)
   const [showMethodology, setShowMethodology] = useState(false)
   const distRef = useRef(null)
   const suggRef = useRef(null)
@@ -357,13 +351,6 @@ export default function CaskValuator({ isMobile, onResult }) {
     const comps = findComparables(distillery, r.tier, r.age, caskType)
     setResult({ ...r, comparables: comps, lpaUsed: lpaNum })
     onResult?.()
-  }
-
-  async function handleMailSubmit(e) {
-    e.preventDefault()
-    if (!mailEmail.includes('@')) return
-    await supabase.from('mailing_list').upsert({ email: mailEmail }, { onConflict: 'email', ignoreDuplicates: true })
-    setMailDone(true)
   }
 
   const inputStyle = {
@@ -715,42 +702,17 @@ export default function CaskValuator({ isMobile, onResult }) {
             </div>
           )}
 
-          {/* Monthly briefing email capture */}
+          {/* Sign-ups closed */}
           <div style={{ borderTop: `1px solid ${C.border}`, padding: '32px 0 32px', marginBottom: 0 }}>
-            <div style={{ fontSize: 8, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.terracotta, fontFamily: SANS, fontWeight: 400, marginBottom: 14 }}>
+            <div style={{ fontSize: 8, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.muted, fontFamily: SANS, fontWeight: 400, marginBottom: 14 }}>
               Monthly Market Briefing
             </div>
-            {mailDone ? (
-              <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 400, color: C.dark, fontStyle: 'italic' }}>
-                You'll receive the December 2026 briefing.
-              </div>
-            ) : (
-              <>
-                <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: C.dark, marginBottom: 10, lineHeight: 1.15 }}>
-                  Get next month's update free.
-                </div>
-                <div style={{ fontSize: 13, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.6, marginBottom: 20 }}>
-                  Clearance rates, bid–ask data, and distillery intelligence delivered on the first of each month.
-                </div>
-                <form onSubmit={handleMailSubmit}>
-                  <input
-                    type="email" value={mailEmail} onChange={e => setMailEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '12px 14px', marginBottom: 10, border: `1px solid ${C.borderMid}`, borderRadius: 0, fontSize: 14, fontFamily: SANS, fontWeight: 300, color: C.dark, background: C.white, outline: 'none' }}
-                    className="tbk-field"
-                  />
-                  <button type="submit" style={{
-                    display: 'block', width: '100%', padding: '13px',
-                    background: C.dark, color: '#F5F2EC',
-                    border: 'none', borderRadius: 0, fontSize: 10,
-                    fontFamily: SANS, fontWeight: 400, cursor: 'pointer',
-                    letterSpacing: '0.2em', textTransform: 'uppercase',
-                  }}>
-                    Notify me
-                  </button>
-                </form>
-              </>
-            )}
+            <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: C.dark, marginBottom: 10, lineHeight: 1.15, fontStyle: 'italic' }}>
+              New sign-ups are paused.
+            </div>
+            <div style={{ fontSize: 13, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.6 }}>
+              The valuation tool remains free and fully functional.
+            </div>
           </div>
 
           <div style={{ paddingTop: 20, textAlign: 'center' }}>
