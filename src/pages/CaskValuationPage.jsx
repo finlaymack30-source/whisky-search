@@ -21,13 +21,12 @@ const KEYWORDS     = 'whisky cask valuation, cask auction data, whisky market in
 
 const JSON_LD = JSON.stringify({
   '@context': 'https://schema.org',
-  '@type': 'FinancialProduct',
+  '@type': 'WebPage',
   name: 'Whisky Cask Valuation Tool',
   description: DESCRIPTION,
   url: 'https://www.thebottlekeep.co.uk/cask-valuation',
-  provider: {
-    '@type': 'Organization',
-    name: 'The Bottle Keep',
+  isPartOf: {
+    '@type': 'WebSite',
     url: 'https://www.thebottlekeep.co.uk',
   },
 })
