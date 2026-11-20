@@ -310,6 +310,7 @@ export default function CaskValuator({ isMobile, onResult }) {
   const [result, setResult]           = useState(null)
   const [suggestions, setSuggestions] = useState([])
   const [showSugg, setShowSugg]       = useState(false)
+  const [lpaError, setLpaError]           = useState('')
   const [mailEmail, setMailEmail]         = useState('')
   const [mailDone, setMailDone]           = useState(false)
   const [showMethodology, setShowMethodology] = useState(false)
@@ -347,9 +348,14 @@ export default function CaskValuator({ isMobile, onResult }) {
     if (!distillery || !fillYear) return
     const yr = parseInt(fillYear)
     if (isNaN(yr) || yr < 1960 || yr > 2026) return
-    const r = valueCask({ distillery, fillYear: yr, caskType, lpa: lpa ? parseFloat(lpa) : (DEFAULT_LPA[caskType] ?? 200) })
+    const lpaNum = parseFloat(lpa)
+    if (!lpa || isNaN(lpaNum) || lpaNum <= 0) {
+      setLpaError("Enter your cask's LPA")
+      return
+    }
+    const r = valueCask({ distillery, fillYear: yr, caskType, lpa: lpaNum })
     const comps = findComparables(distillery, r.tier, r.age, caskType)
-    setResult({ ...r, comparables: comps })
+    setResult({ ...r, comparables: comps, lpaUsed: lpaNum })
     onResult?.()
   }
 
@@ -445,10 +451,22 @@ export default function CaskValuator({ isMobile, onResult }) {
           </div>
 
           <div>
-            <label style={labelStyle}>
-              LPA <span style={{ textTransform: 'none', fontSize: 8, letterSpacing: 0, color: C.muted }}>(optional)</span>
-            </label>
-            <input type="number" min="0" step="0.1" value={lpa} onChange={e => setLpa(e.target.value)} placeholder="e.g. 150" style={inputStyle} className="tbk-field" />
+            <label style={labelStyle}>LPA</label>
+            <input
+              type="number" min="1" step="0.1" value={lpa}
+              onChange={e => { setLpa(e.target.value); setLpaError('') }}
+              placeholder="e.g. 150"
+              style={{ ...inputStyle, borderColor: lpaError ? '#C0392B' : '#D9D4C8' }}
+              className="tbk-field"
+            />
+            {lpaError && (
+              <div style={{ marginTop: 6, fontSize: 11, color: '#C0392B', fontFamily: SANS, fontWeight: 300 }}>
+                {lpaError}
+              </div>
+            )}
+            <div style={{ marginTop: 6, fontSize: 11, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.5 }}>
+              Find this on your delivery order or warehouse statement. LPA&nbsp;=&nbsp;litres&nbsp;×&nbsp;ABV&nbsp;/&nbsp;100.
+            </div>
           </div>
         </div>
 
@@ -507,9 +525,12 @@ export default function CaskValuator({ isMobile, onResult }) {
             borderBottom: `1px solid ${C.border}`,
             marginTop: 52, marginBottom: 48,
           }}>
-            <Label style={{ marginBottom: 32 }}>
+            <Label style={{ marginBottom: 10 }}>
               Estimated achievable — current market, Nov 2026
             </Label>
+            <div style={{ fontSize: 12, color: C.muted, fontFamily: SANS, fontWeight: 300, marginBottom: 24 }}>
+              Based on {result.lpaUsed} LPA
+            </div>
 
             <div style={{
               display: 'grid',

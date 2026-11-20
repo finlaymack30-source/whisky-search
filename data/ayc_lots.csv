@@ -1,0 +1,22 @@
+auction_month,lot_url,distillery,fill_year,cask_type,fill_type,lpa,lpa_basis,abv,est_bottles,status,price_gbp,price_type,bids,estimate_low,estimate_high,peated,location,notes
+2026-02,,Craigellachie,2009,Butt,sherry,208.6,RLA,58.7,507,closed_unconfirmed,11500,highest_bid,18,,,,,from earlier screenshot; estimate not captured
+2026-02,,Bruichladdich,2009,Hogshead,rivesaltes,88.7,RLA,60.1,210,closed_unconfirmed,7000,highest_bid,12,,,,,from earlier screenshot; estimate not captured
+2026-02,,Royal Brackla,2011,Hogshead,,115.2,RLA,59.0,278,closed_unconfirmed,6000,highest_bid,14,,,,,from earlier screenshot; estimate not captured
+2026-02,,Ben Nevis,2012,Hogshead,,102.56,RLA,57.7,253,closed_unconfirmed,5750,highest_bid,11,,,,,from earlier screenshot; estimate not captured
+2026-02,,Caol Ila,2023,Barrique,first-fill oloroso,162.7,OLA,71.6,324,closed_unconfirmed,5750,highest_bid,16,,,,,from earlier screenshot; estimate not captured; sold as OLA
+2026-06,,Glenburgie,2013,Butt,sherry,235.77,RLA,61.14,551,closed_unconfirmed,5750,highest_bid,8,,,,Cask Trade Warehouse,no estimate shown
+,,Craigellachie,2009,Hogshead,,113.43,RLA,58.52,276,closed_unconfirmed,5000,highest_bid,4,10000,11500,,Cask Trade Warehouse,
+,,Bunnahabhain,2008,Barrel,,97.1,RLA,60.90,227,closed_unconfirmed,,,,10000,12000,y,Braeside Bond,price screenshot missing
+,,Macduff,2009,Hogshead,,92.5,RLA,53.80,245,closed_unconfirmed,8000,highest_bid,,9500,11000,,Inverhouse,
+,,Ardmore,2009,Barrel,,69.94,RLA,60.44,165,closed_unconfirmed,5500,highest_bid,,6000,7000,y,Cask Trade Warehouse,
+,,BenRiach,1997,Hogshead,,69.08,RLA,62.79,157,closed_unconfirmed,4600,highest_bid,,17000,19000,,Cask Trade Warehouse,
+,,Glenrothes,2014,Hogshead,,122.2,RLA,62.70,278,closed_unconfirmed,4500,highest_bid,3,5000,6000,,Edrington Glenrothes,bid count partly cropped
+,,Balmenach,2011,Hogshead,,112.35,RLA,59.92,267,closed_unconfirmed,4400,highest_bid,,9000,10000,,D&M Winchester,
+,,Caol Ila,2020,Hogshead,refill,144.6,OLA,63.50,325,closed_unconfirmed,4100,highest_bid,,,,,Cask Trade Warehouse,label photo shows 156.8 LOA and 316 bottles; page figures reconcile with ABV; sold as OLA; no estimate shown
+,,Fettercairn,2011,Hogshead,sherry,135.1,RLA,65.30,295,closed_unconfirmed,4100,highest_bid,,6000,7000,,D&M Forres,price partly cropped in screenshot (reads 4100); sold as RLA
+,,Dalmunach,2017,Barrel,,101.5,RLA,64.00,226,closed_unconfirmed,3500,highest_bid,8,3500,4500,,Auchtermuchty Bond,final bid equals low estimate
+,,Deanston,2013,Barrel,,85.68,RLA,57.18,214,closed_unconfirmed,3500,highest_bid,4,3800,4500,,D&M Coleburn,bid count inferred from adjacent unlabelled screenshot
+,,Linkwood,2016,Barrel,bourbon,96.5,RLA,56.90,242,closed_unconfirmed,3500,highest_bid,5,3500,4500,,Volpe & Castello,ASB bourbon barrel; final bid equals low estimate
+,,Glenburgie,2011,Hogshead,sherry,123.1,RLA,58.10,302,closed_unconfirmed,3100,highest_bid,,5600,7000,,D&M Forres,label photo says distilled 16/09/2021 but aged 14 years; page says 2011 so used 2011
+,,Inchgower,2009,Hogshead,refill bourbon,134.6,RLA,59.09,325,closed_unconfirmed,3000,highest_bid,7,6500,7500,,Volpe & Castello,
+,,Blair Athol,2022,Cognac Cask,cognac,242.9,OLA,66.70,520,closed_unconfirmed,2700,highest_bid,6,4500,5500,,D&M Coleburn,sold as OLA; aged 3 years; implied fill about 364 L so larger than a hogshead
