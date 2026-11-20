@@ -1,4 +1,7 @@
 {
+  "redirects": [
+    { "source": "/", "destination": "/cask-valuation", "permanent": true }
+  ],
   "installCommand": "pnpm install",
   "buildCommand":   "pnpm run build",
   "outputDirectory": "dist",

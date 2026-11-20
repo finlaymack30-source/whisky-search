@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import ReactGA from 'react-ga4'
 import CaskValuationPage from './pages/CaskValuationPage'
 import LpaPage from './pages/LpaPage'
@@ -20,7 +20,6 @@ export default function App() {
     <BrowserRouter>
       <Analytics />
       <Routes>
-        <Route path="/" element={<Navigate to="/cask-valuation" replace />} />
         <Route path="/cask-valuation" element={<CaskValuationPage />} />
         <Route path="/what-is-lpa"    element={<LpaPage />} />
         <Route path="*"               element={<NotFoundPage />} />
