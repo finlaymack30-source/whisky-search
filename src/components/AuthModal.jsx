@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../supabase'
 
 const SERIF = "'Cormorant Garamond', 'Playfair Display', Georgia, serif"
@@ -37,13 +37,6 @@ export default function AuthModal({ mode, onClose, onSuccess, onSwitchMode, pend
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [emailSent, setEmailSent] = useState(false)
-
-  useEffect(() => {
-    const url = import.meta.env.VITE_SUPABASE_URL
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY
-    console.log('[auth] VITE_SUPABASE_URL:', url ?? 'UNDEFINED')
-    console.log('[auth] VITE_SUPABASE_ANON_KEY:', key ? `${key.slice(0, 20)}…` : 'UNDEFINED')
-  }, [])
 
   const fieldInput = {
     display: 'block', width: '100%', boxSizing: 'border-box',
