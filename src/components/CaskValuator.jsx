@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import MethodologyModal from './MethodologyModal'
 import {
   valueCask, findComparables,
@@ -452,7 +453,10 @@ export default function CaskValuator({ isMobile, onResult }) {
               </div>
             )}
             <div style={{ marginTop: 6, fontSize: 11, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.5 }}>
-              Find this on your delivery order or warehouse statement. LPA&nbsp;=&nbsp;litres&nbsp;×&nbsp;ABV&nbsp;/&nbsp;100.
+              Find this on your delivery order or warehouse statement. LPA&nbsp;=&nbsp;litres&nbsp;×&nbsp;ABV&nbsp;/&nbsp;100.{' '}
+              <Link to="/what-is-lpa" style={{ color: C.muted, textDecorationColor: C.borderMid, textUnderlineOffset: 2 }}>
+                What is LPA?
+              </Link>
             </div>
           </div>
         </div>
