@@ -2,6 +2,10 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
 export const handler = async (event) => {
+  if (process.env.PAYMENTS_ENABLED !== 'true') {
+    return { statusCode: 404, body: 'Not found' }
+  }
+
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method not allowed' }
   }
