@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import ReactGA from 'react-ga4'
 import MethodologyModal from './MethodologyModal'
 import {
   valueCask, findComparables,
@@ -351,6 +352,8 @@ export default function CaskValuator({ isMobile, onResult }) {
     const r = valueCask({ distillery, fillYear: yr, caskType, lpa: lpaNum })
     const comps = findComparables(distillery, r.tier, r.age, caskType)
     setResult({ ...r, comparables: comps, lpaUsed: lpaNum })
+    ReactGA.event('cask_valued', { distillery, fill_year: yr, cask_type: caskType })
+    ReactGA.event('cask_result_viewed', { tier: r.tier, confidence: r.confidence })
     onResult?.()
   }
 
