@@ -1,0 +1,12 @@
+{
+  "name": "whisky-scraper",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Scraper dependencies kept separate to avoid polluting the main project audit surface.",
+  "dependencies": {
+    "playwright": "^1.59.1",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  }
+}
