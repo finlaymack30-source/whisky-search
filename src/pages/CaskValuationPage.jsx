@@ -14,9 +14,9 @@ const C = {
   border: '#E8E4DC',
 }
 
-const TITLE        = 'Whisky Cask Valuation Tool — Free Estimate | The Bottle Keep'
-const DESCRIPTION  = 'Free whisky cask valuation tool calibrated to live auction data. See what your cask is worth in the current market — 2.1% clearance rate, 97.9% reserve failure. Instant estimate.'
-const DESCRIPTION2 = 'Independent whisky cask valuation tool built on auction data. With a 30% bid–ask gap and only 2.1% of casks clearing at auction in 2026, knowing your cask\'s real market value matters. Free to use.'
+const TITLE        = 'Whisky Cask Valuation Tool — Free Indicative Estimate | The Bottle Keep'
+const DESCRIPTION  = 'Free indicative whisky cask valuation built on auction comparable data. Get a data-grounded starting point — calibrated to 2026 clearance rates. Not financial advice; consult a broker for a formal appraisal.'
+const DESCRIPTION2 = 'An independent indicative estimate of whisky cask value, using auction comparable sales. Only 2.1% of casks cleared reserve at auction in 2026. This free tool gives you a data-grounded starting point — not a guaranteed price.'
 const KEYWORDS     = 'whisky cask valuation, cask auction data, whisky market intelligence, cask clearance rate, whisky investment'
 
 const JSON_LD = JSON.stringify({
@@ -56,6 +56,7 @@ export default function CaskValuationPage() {
         <meta name="twitter:title" content={TITLE} />
         <meta name="twitter:description" content={DESCRIPTION2} />
         <script type="application/ld+json">{JSON_LD}</script>
+        <link rel="canonical" href="https://www.thebottlekeep.co.uk/cask-valuation" />
       </Helmet>
 
       <h1 style={{
