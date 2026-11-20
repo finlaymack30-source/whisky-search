@@ -157,7 +157,7 @@ function ConvergenceChart({ peakLpa, sellerExpLpa, buyerLpa, decayRate, capitula
   const PL = 54, PR = 18, PT = 22, PB = 36
   const CW = W - PL - PR, CH = H - PT - PB
 
-  const PAST = 34
+  const PAST = Math.round((Date.now() - new Date('2024-01-01').getTime()) / (1000 * 60 * 60 * 24 * 30.44))
   const futureDisplay = Math.min(capitulationMonths > 0 ? capitulationMonths + 14 : 38, 52)
   const total = PAST + futureDisplay
 
@@ -204,7 +204,7 @@ function ConvergenceChart({ peakLpa, sellerExpLpa, buyerLpa, decayRate, capitula
   })
   xDates.push({ x: nowX, label: 'Now' })
   if (convX) {
-    const d = new Date(2026, 10, 1)
+    const d = new Date()
     d.setMonth(d.getMonth() + capitulationMonths)
     xDates.push({ x: convX, label: d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }) })
   }
@@ -513,7 +513,7 @@ export default function CaskValuator({ isMobile, onResult }) {
             marginTop: 52, marginBottom: 48,
           }}>
             <Label style={{ marginBottom: 10 }}>
-              Estimated achievable — current market, Nov 2026
+              Indicative estimate — {new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
             </Label>
             <div style={{ fontSize: 12, color: C.muted, fontFamily: SANS, fontWeight: 300, marginBottom: 24 }}>
               Based on {result.lpaUsed} LPA
@@ -716,6 +716,9 @@ export default function CaskValuator({ isMobile, onResult }) {
           </div>
 
           <div style={{ paddingTop: 20, textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: C.muted, fontFamily: SANS, fontWeight: 300, lineHeight: 1.6, marginBottom: 14 }}>
+              This is an indicative estimate, not financial advice. Figures are derived from auction comparable sales and carry material uncertainty. Consult a specialist broker before making decisions.
+            </p>
             <button
               onClick={() => setShowMethodology(true)}
               style={{

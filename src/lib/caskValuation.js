@@ -59,7 +59,9 @@ const RECOVERY_MULT = { 1: 1.8, 2: 2.6, 3: 3.2, 4: 4.0 }
 const MARKET_STRESS    = 0.979
 const STRESS_RETENTION = { 1: 0.52, 2: 0.34, 3: 0.20, 4: 0.10 }
 const MONTHLY_DECAY    = { 1: 0.008, 2: 0.015, 3: 0.020, 4: 0.030 }
-const MONTHS_SINCE_PEAK = 34
+const MONTHS_SINCE_PEAK = Math.round(
+  (Date.now() - new Date('2024-01-01').getTime()) / (1000 * 60 * 60 * 24 * 30.44)
+)
 
 // ─────────────────────────────────────────────────────────────
 // Normal distribution helpers (kept for ageCDF marginal)
