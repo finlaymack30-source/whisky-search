@@ -23,8 +23,11 @@ dist-ssr
 .env.test.local
 
 # Credential files (never commit)
-SUPABASE_SERVICE_KEY*
-WA_PASSWORD*
+SUPABASE_*
+WA_*
+*_KEY
+*_SECRET
+*_PASSWORD
 node
 
 # Scraper runtime state
